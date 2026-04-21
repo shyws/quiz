@@ -3186,7 +3186,21 @@ async function refreshBankStats(bankId){
 async function exportBank(bankId,bankName){
   const bank=await db.banks.get(bankId);
   const qs=await db.questions.where('bankId').equals(bankId).sortBy('order');
-  const data={version:'1.0',exportedAt:new Date().toISOString(),bank,questions:qs.map(q=>{const{id,...r}=q;return{...r,options:JSON.parse(q.options||'[]')};})};
+  // 获取该题库关联的专题
+  const topicLinks = await db.topicBanks.where('bankId').equals(bankId).toArray();
+  const topicIds = topicLinks.map(l => l.topicId);
+  const topics = await Promise.all(topicIds.map(id => db.topics.get(id)));
+  const topicData = topics.filter(t => t).map(t => ({ id: t.id, name: t.name }));
+  
+  const data={
+    version:'1.1', // 升级版本号，标识包含专题信息
+    exportedAt:new Date().toISOString(),
+    type:'single-bank',
+    bank,
+    questions:qs.map(q=>{const{id,...r}=q;return{...r,options:JSON.parse(q.options||'[]')};}),
+    // 导出专题关联信息（便于导入时重建关联）
+    relatedTopics: topicData
+  };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`${bankName}-${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.json`;a.click();URL.revokeObjectURL(url);
@@ -3195,8 +3209,31 @@ async function exportBank(bankId,bankName){
 
 async function exportAllBanks(){
   const banks=await db.banks.toArray();
-  const allData=await Promise.all(banks.map(async b=>{const qs=await db.questions.where('bankId').equals(b.id).sortBy('order');return{...b,questions:qs.map(q=>{const{id,...r}=q;return{...r,options:JSON.parse(q.options||'[]')};})};}));
-  const data={version:'1.0',exportedAt:new Date().toISOString(),type:'all-banks',banks:allData};
+  // 获取所有专题
+  const topics = await db.topics.toArray();
+  // 获取所有专题-题库关联
+  const topicBanks = await db.topicBanks.toArray();
+  
+  const allData=await Promise.all(banks.map(async b=>{
+    const qs=await db.questions.where('bankId').equals(b.id).sortBy('order');
+    // 获取该题库关联的专题
+    const links = topicBanks.filter(l => l.bankId === b.id);
+    const topicIds = links.map(l => l.topicId);
+    const relatedTopics = topics.filter(t => topicIds.includes(t.id)).map(t => ({ id: t.id, name: t.name }));
+    return{
+      ...b,
+      questions:qs.map(q=>{const{id,...r}=q;return{...r,options:JSON.parse(q.options||'[]')};}),
+      relatedTopics
+    };
+  }));
+  const data={
+    version:'1.1',
+    exportedAt:new Date().toISOString(),
+    type:'all-banks',
+    banks:allData,
+    topics, // 导出所有专题
+    topicBanks // 导出所有关联关系
+  };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`题库全量备份-${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.json`;a.click();URL.revokeObjectURL(url);
@@ -3209,12 +3246,200 @@ async function handleModalImport(e){const f=e.target.files[0];if(f){closeImportM
 async function doImport(file){
   try{
     const text=await file.text();const data=JSON.parse(text);
+    const isNewVersion = data.version === '1.1';
+    
     if(data.type==='all-banks'&&Array.isArray(data.banks)){
-      for(const bd of data.banks){const{id,questions,...bank}=bd;const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});const recs=(questions||[]).map(q=>({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()}));await db.questions.bulkAdd(recs);await refreshBankStats(newId);}
-      showToast(`成功导入 ${data.banks.length} 个题库`);
+      // 全量备份导入（可能包含专题信息）
+      const bankIdMap = {}; // 旧题库ID -> 新题库ID
+      let topicsCreated = 0;
+      let banksImported = 0;
+      let banksSkipped = 0;
+      let questionsSkipped = 0;
+      
+      // 1. 如果是新版本，先导入专题
+      if(isNewVersion && data.topics && Array.isArray(data.topics)){
+        const topicNameMap = {}; // 专题名称 -> 新专题ID
+        for(const topic of data.topics){
+          const newTopicId = await db.topics.add({
+            name: topic.name,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          });
+          topicNameMap[topic.name] = newTopicId;
+          topicsCreated++;
+        }
+        
+        // 2. 导入题库
+        for(const bd of data.banks){
+          const{id,questions,relatedTopics,...bank}=bd;
+          
+          // 检测题库是否已存在（按名称）
+          const existingBank = await db.banks.where('name').equals(bank.name).first();
+          if(existingBank){
+            banksSkipped++;
+            // 仍然需要处理专题关联（如果专题是新创建的）
+            for(const rt of relatedTopics || []){
+              if(topicNameMap[rt.name]){
+                const existingLink = await db.topicBanks.where({topicId: topicNameMap[rt.name], bankId: existingBank.id}).first();
+                if(!existingLink){
+                  await db.topicBanks.add({
+                    topicId: topicNameMap[rt.name],
+                    bankId: existingBank.id
+                  });
+                }
+              }
+            }
+            continue;
+          }
+          
+          const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
+          bankIdMap[id] = newId;
+          
+          // 导入题目，检测重复
+          const recs=[];
+          for(const q of questions || []){
+            const existingQ = await db.questions.where({bankId: newId, content: q.content}).first();
+            if(existingQ){
+              questionsSkipped++;
+              continue;
+            }
+            recs.push({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()});
+          }
+          if(recs.length > 0){
+            await db.questions.bulkAdd(recs);
+          }
+          await refreshBankStats(newId);
+          banksImported++;
+          
+          // 3. 重建专题关联（按名称查找新专题ID）
+          if(relatedTopics && Array.isArray(relatedTopics)){
+            for(const rt of relatedTopics){
+              if(topicNameMap[rt.name]){
+                await db.topicBanks.add({
+                  topicId: topicNameMap[rt.name],
+                  bankId: newId
+                });
+              }
+            }
+          }
+        }
+      } else {
+        // 旧版本格式，无专题信息，只导入题库
+        for(const bd of data.banks){
+          const{id,questions,...bank}=bd;
+          
+          // 检测题库是否已存在
+          const existingBank = await db.banks.where('name').equals(bank.name).first();
+          if(existingBank){
+            banksSkipped++;
+            continue;
+          }
+          
+          const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
+          
+          // 导入题目，检测重复
+          const recs=[];
+          for(const q of questions || []){
+            const existingQ = await db.questions.where({bankId: newId, content: q.content}).first();
+            if(existingQ){
+              questionsSkipped++;
+              continue;
+            }
+            recs.push({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()});
+          }
+          if(recs.length > 0){
+            await db.questions.bulkAdd(recs);
+          }
+          await refreshBankStats(newId);
+          banksImported++;
+        }
+      }
+      
+      let msg = '';
+      if(banksSkipped > 0 || questionsSkipped > 0){
+        msg = `导入完成：新增 ${banksImported} 个题库，${banksSkipped} 个已跳过；新增 ${questionsSkipped === 0 ? '' : questionsSkipped + ' 道题目已跳过'}`;
+      } else {
+        msg = topicsCreated > 0 
+          ? `成功导入 ${banksImported} 个题库和 ${topicsCreated} 个专题`
+          : `成功导入 ${banksImported} 个题库`;
+      }
+      showToast(msg, banksSkipped > 0 ? 'info' : 'success');
+      
     }else if(data.bank){
-      const{id,questions,...bank}=data.bank;const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});const recs=(questions||[]).map(q=>({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()}));await db.questions.bulkAdd(recs);await refreshBankStats(newId);
-      showToast(`成功导入题库《${bank.name}》`);
+      // 单个题库导出（可能包含专题信息）
+      const{id,questions,relatedTopics,...bank}=data.bank;
+      
+      // 检测题库是否已存在
+      const existingBank = await db.banks.where('name').equals(bank.name).first();
+      let targetBankId;
+      let questionsSkipped = 0;
+      
+      if(existingBank){
+        // 题库已存在，只追加不重复的题目
+        targetBankId = existingBank.id;
+        
+        for(const q of questions || []){
+          const existingQ = await db.questions.where({bankId: targetBankId, content: q.content}).first();
+          if(existingQ){
+            questionsSkipped++;
+            continue;
+          }
+          await db.questions.add({
+            ...q,
+            id: undefined,
+            bankId: targetBankId,
+            options: JSON.stringify(q.options || []),
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          });
+        }
+        await refreshBankStats(targetBankId);
+      } else {
+        // 题库不存在，创建新题库并导入所有题目
+        targetBankId = await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
+        const recs=(questions||[]).map(q=>({...q,id:undefined,bankId:targetBankId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()}));
+        await db.questions.bulkAdd(recs);
+        await refreshBankStats(targetBankId);
+      }
+      
+      // 如果包含专题信息，尝试匹配或创建专题并关联
+      if(isNewVersion && relatedTopics && Array.isArray(relatedTopics) && relatedTopics.length > 0){
+        for(const rt of relatedTopics){
+          // 查找是否已存在同名专题
+          const existingTopic = await db.topics.where('name').equals(rt.name).first();
+          let targetTopicId;
+          
+          if(existingTopic){
+            targetTopicId = existingTopic.id;
+          } else {
+            // 创建新专题
+            targetTopicId = await db.topics.add({
+              name: rt.name,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+          }
+          
+          // 建立关联（检查是否已存在）
+          const existingLink = await db.topicBanks.where({topicId: targetTopicId, bankId: targetBankId}).first();
+          if(!existingLink){
+            await db.topicBanks.add({
+              topicId: targetTopicId,
+              bankId: targetBankId
+            });
+          }
+        }
+      }
+      
+      if(existingBank){
+        if(questionsSkipped > 0){
+          showToast(`题库《${bank.name}》已存在，追加了 ${(questions || []).length - questionsSkipped} 道新题，${questionsSkipped} 道重复跳过`, 'info');
+        } else {
+          showToast(`题库《${bank.name}》已存在，已追加 ${(questions || []).length} 道新题`, 'info');
+        }
+      } else {
+        showToast(`成功导入题库《${bank.name}》共 ${(questions || []).length} 题${relatedTopics && relatedTopics.length > 0 ? `，关联 ${relatedTopics.length} 个专题` : ''}`, 'success');
+      }
     }else{throw new Error('文件格式不正确');}
     if(state.currentTab==='bank')loadBanks();
   }catch(err){showToast(`导入失败：${err.message}`,'error');}
