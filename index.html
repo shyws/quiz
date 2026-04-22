@@ -39,12 +39,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .modal {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000;
   background: rgba(0,0,0,0.5); display: flex; align-items: center;
-  justify-content: center; padding: 20px;
+  justify-content: center; padding: 20px; cursor: pointer;
 }
 .modal-content {
   background: white; border-radius: 16px; width: 100%; max-width: 480px;
   max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  animation: modalIn 0.25s ease-out;
+  animation: modalIn 0.25s ease-out; cursor: default;
 }
 @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
 .modal-header {
@@ -403,6 +403,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
           <option value="judge">判断题</option>
           <option value="blank">填空题</option>
         </select>
+        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none px-3 py-2.5 border border-gray-200 rounded-xl hover:bg-yellow-50 transition-colors" id="filter-fav-label">
+          <input type="checkbox" id="filter-favorite" onchange="loadBanks()" class="w-4 h-4 accent-yellow-500">
+          <span>⭐ 只看收藏</span>
+        </label>
       </div>
       <div id="bank-list"></div>
       <div id="empty-state" class="hidden text-center py-16">
@@ -585,8 +589,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <!-- 导入弹窗 -->
-<div id="import-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl p-6 w-full max-w-md fade-in">
+<div id="import-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4" onclick="closeImportModal()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl p-6 w-full max-w-md fade-in">
     <h3 class="font-semibold text-lg text-gray-800 mb-4">📥 导入题库</h3>
     <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all" onclick="document.getElementById('modal-file-input').click()">
       <div class="text-3xl mb-2">📁</div>
@@ -600,8 +604,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <!-- 创建专题弹窗 -->
-<div id="topic-modal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl p-6 w-full max-w-lg fade-in">
+<div id="topic-modal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center p-4" onclick="closeTopicModal()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl p-6 w-full max-w-lg fade-in">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-semibold text-lg text-gray-800" id="topic-modal-title">🏷️ 新建专题</h3>
       <button onclick="closeTopicModal()" class="text-gray-400 hover:text-gray-600 text-xl">×</button>
@@ -625,12 +629,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <!-- 专题详情/编辑弹窗 -->
-<div id="topic-detail-modal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto fade-in">
+<div id="topic-detail-modal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center p-4" onclick="closeTopicDetailModal()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto fade-in">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-semibold text-lg text-gray-800" id="topic-detail-title">🏷️ 专题详情</h3>
       <div class="flex items-center gap-2">
-        <button onclick="editCurrentTopic()" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">✏️ 编辑</button>
+        <button onclick="editTopic(currentTopicId)" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">✏️ 编辑</button>
         <button onclick="startQuizFromTopic()" class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">🎯 刷题</button>
         <button onclick="closeTopicDetailModal()" class="text-gray-400 hover:text-gray-600 text-xl">×</button>
       </div>
@@ -651,8 +655,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <!-- 题目详情弹窗 -->
-<div id="question-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto fade-in flex flex-col">
+<div id="question-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4" onclick="closeQuestionModal()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto fade-in flex flex-col">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-semibold text-lg text-gray-800" id="question-modal-title">题目详情</h3>
       <div class="flex items-center gap-3">
@@ -660,7 +664,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
         <button onclick="closeQuestionModal()" class="text-gray-400 hover:text-gray-600 text-xl">×</button>
       </div>
     </div>
-    <!-- 批量操作工具栏 -->
+    <!-- 批量操作工具栏（仅保留删除功能） -->
     <div id="batch-toolbar" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
         <input type="checkbox" id="select-all-questions" onchange="toggleSelectAll()" class="w-4 h-4 accent-blue-600">
@@ -669,9 +673,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
         </label>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="batchConfirmSelected()" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors">✅ 确认选中</button>
         <button onclick="batchDeleteSelected()" class="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">🗑️ 删除选中</button>
-        <button onclick="batchEditSelected()" class="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors">✏️ 批量编辑</button>
       </div>
     </div>
     <div id="question-modal-content" class="flex-1 overflow-y-auto space-y-3"></div>
@@ -689,6 +691,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
       <span id="quiz-progress" class="text-gray-500">第 1 / 10 题</span>
       <span id="quiz-timer" class="font-mono text-gray-700 bg-gray-100 px-3 py-1 rounded-lg">⏱ 00:00</span>
       <div class="flex items-center gap-1">
+        <button onclick="toggleFavorite(quizState.questions[quizState.currentIndex]?.id)" id="quiz-fav-btn" class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">☆ 收藏</button>
         <button onclick="toggleQuizOrder()" id="quiz-order-btn" class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">🔀 随机</button>
       </div>
     </div>
@@ -710,8 +713,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 </div>
 
 <!-- 答题结果弹窗 -->
-<div id="quiz-result-modal" class="fixed inset-0 bg-black/50 z-[70] hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl p-8 w-full max-w-lg text-center fade-in">
+<div id="quiz-result-modal" class="fixed inset-0 bg-black/50 z-[70] hidden items-center justify-center p-4" onclick="closeQuizResult()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl p-8 w-full max-w-lg text-center fade-in">
     <div class="text-6xl mb-4" id="quiz-result-emoji">🎉</div>
     <h3 class="text-2xl font-bold text-gray-800 mb-2" id="quiz-result-title">答题完成！</h3>
     <p class="text-gray-500 mb-6" id="quiz-result-subtitle">本次练习用时</p>
@@ -749,7 +752,7 @@ const state={currentTab:'import',currentContent:null,currentSource:'',aiConfig:{
 const db=new Dexie('AIQuestionBank');
 db.version(2).stores({
   banks:'++id,name,createdAt,updatedAt',
-  questions:'++id,bankId,type,difficulty,isConfirmed,order,stats',
+  questions:'++id,bankId,type,difficulty,isConfirmed,isFavorite,order,stats',
   topics:'++id,name,createdAt,updatedAt',
   topicBanks:'++id,topicId,bankId'
 });
@@ -808,7 +811,7 @@ async function loadTopics() {
     for (const bid of bankIds) {
       const bank = await db.banks.get(bid);
       if (bank) {
-        const qs = await db.questions.where('bankId').equals(bid).filter(q => q.isConfirmed).toArray();
+        const qs = await db.questions.where('bankId').equals(bid).toArray();
         totalQuestions += qs.length;
         banks.push(bank);
       }
@@ -928,7 +931,7 @@ async function openTopicDetail(topicId) {
   for (const link of topicBankLinks) {
     const bank = await db.banks.get(link.bankId);
     if (!bank) continue;
-    const questions = await db.questions.where('bankId').equals(bank.id).filter(q => q.isConfirmed).toArray();
+    const questions = await db.questions.where('bankId').equals(bank.id).toArray();
     html += `<div class="bg-gray-50 rounded-xl p-4">
       <div class="flex items-center justify-between">
         <div>
@@ -982,7 +985,7 @@ async function startQuizFromTopic() {
   
   let allQuestions = [];
   for (const link of topicBankLinks) {
-    const qs = await db.questions.where('bankId').equals(link.bankId).filter(q => q.isConfirmed).toArray();
+    const qs = await db.questions.where('bankId').equals(link.bankId).toArray();
     allQuestions.push(...qs);
   }
   
@@ -1104,19 +1107,27 @@ async function loadWrongQuestions() {
     const stars = '⭐'.repeat(q.difficulty || 2);
     const dueText = getDueText(q);
     
+    const qJson = JSON.stringify(q).replace(/'/g, "\\'");
+    const hasNote = !!(q.wrongNote || q.aiReply);
     html += `<div class="bg-white rounded-xl border ${isDue ? 'border-red-300 bg-red-50' : 'border-gray-100'} shadow-sm p-4 mb-3">
-      <div class="flex items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-2">
+          <div class="flex items-center gap-2 mb-2 flex-wrap">
             <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
             <span class="text-xs text-gray-400">${stars}</span>
             <span class="text-xs text-red-500 font-medium">❌ ${q.wrongCount}次</span>
             ${isDue ? '<span class="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">待复习</span>' : ''}
+            ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
           </div>
           <p class="text-sm text-gray-800 line-clamp-2">${escapeHtml(q.stem || '')}</p>
           <p class="text-xs text-gray-400 mt-2">📚 ${escapeHtml(bank?.name || '未知')} · ${dueText}</p>
         </div>
-        <button onclick='showWrongQuestionInModal(${JSON.stringify(q).replace(/'/g, "\\'")})' class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 whitespace-nowrap">查看</button>
+      </div>
+      <div class="flex gap-2 mt-3 flex-wrap">
+        <button onclick='showWrongQuestionInModal(${qJson})' class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看</button>
+        <button onclick='openEditQuestionFromWrong(${q.id})' class="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200">✏️ 编辑</button>
+        <button onclick='askAIAboutWrongQuestion(${q.id})' class="px-3 py-1.5 bg-violet-100 text-violet-700 text-xs rounded-lg hover:bg-violet-200">🤖 AI答疑</button>
+        <button onclick='showWrongNotePanel(${q.id})' class="px-3 py-1.5 ${hasNote ? 'bg-purple-100 text-purple-700' : 'bg-gray-50 text-gray-500'} text-xs rounded-lg hover:bg-purple-100">📔 错题笔记</button>
       </div>
     </div>`;
   }
@@ -1203,6 +1214,382 @@ function showWrongQuestionInModal(q) {
   modal.classList.add('flex');
 }
 
+// 从错题界面打开编辑
+async function openEditQuestionFromWrong(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) { showToast('题目不存在', 'error'); return; }
+  // 打开题库模态框并定位到该题
+  state.currentBankIdForModal = q.bankId;
+  await openQuestionModal(q.bankId);
+  // 等待渲染完毕后高亮并触发编辑
+  setTimeout(() => openEditQuestion(qid), 400);
+}
+
+// ========== AI答疑功能 ==========
+async function askAIAboutWrongQuestion(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) { showToast('题目不存在', 'error'); return; }
+  
+  const apiKey = localStorage.getItem('deepseek_api_key');
+  if (!apiKey || apiKey.startsWith('sk-••')) {
+    showToast('请先在设置页配置 DeepSeek API Key', 'warning'); return;
+  }
+  
+  // 打开AI答疑模态框
+  showAIAnswerModal(q);
+}
+
+function showAIAnswerModal(q) {
+  let modal = document.getElementById('ai-answer-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'ai-answer-modal';
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+  }
+  
+  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+  let optsHtml = '';
+  if (q.options) {
+    try {
+      const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+      optsHtml = opts.map((o, i) => `<div class="text-sm text-gray-600 mb-1">${String.fromCharCode(65 + i)}. ${escapeHtml(o.content || o)}</div>`).join('');
+    } catch(e) {}
+  }
+  
+  const existingReply = q.aiReply || '';
+  
+  modal.innerHTML = `
+    <div class="modal-content max-w-2xl w-full" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🤖 AI深度答疑</h3>
+        <button class="modal-close" onclick="closeModal('ai-answer-modal')">✕</button>
+      </div>
+      <div class="p-5">
+        <!-- 题目信息 -->
+        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xs px-2 py-1 rounded-full ${q.type === 'choice' ? 'bg-blue-100 text-blue-700' : q.type === 'judge' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${typeLabel}</span>
+            <span class="text-xs text-red-500">❌ 错误 ${q.wrongCount || 0} 次</span>
+          </div>
+          <p class="text-sm font-medium text-gray-800 mb-2">${escapeHtml(q.stem || '')}</p>
+          ${optsHtml ? `<div class="pl-2 border-l-2 border-gray-200 mb-2">${optsHtml}</div>` : ''}
+          <div class="bg-green-50 border border-green-200 rounded-lg p-2 text-sm text-green-700">✓ 正确答案：${escapeHtml(q.answer || '')}</div>
+        </div>
+        
+        <!-- AI回复区域 -->
+        <div id="ai-reply-area" class="min-h-[120px] bg-violet-50 border border-violet-200 rounded-xl p-4 mb-4 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+          ${existingReply
+            ? escapeHtml(existingReply)
+            : '<span class="text-gray-400">点击下方按钮，让AI深度解析这道题...</span>'}
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="flex gap-2 flex-wrap">
+          <button id="ai-ask-btn" onclick="doAskAI(${q.id})" class="px-4 py-2 bg-violet-600 text-white text-sm rounded-xl hover:bg-violet-700 transition-colors flex items-center gap-2">
+            <span>🤖</span> ${existingReply ? '重新答疑' : '开始答疑'}
+          </button>
+          <button onclick="saveAIReplyToNote(${q.id})" class="px-4 py-2 bg-purple-100 text-purple-700 text-sm rounded-xl hover:bg-purple-200 transition-colors">
+            📔 保存到笔记
+          </button>
+          <button onclick="closeModal('ai-answer-modal')" class="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-xl hover:bg-gray-200 transition-colors">
+            关闭
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">AI答疑内容会自动保存，可在「错题笔记」中查看导出</p>
+      </div>
+    </div>`;
+  
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  modal.onclick = function(e) { if (e.target === modal) closeModal('ai-answer-modal'); };
+}
+
+async function doAskAI(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) return;
+  const apiKey = localStorage.getItem('deepseek_api_key');
+  if (!apiKey || apiKey.startsWith('sk-••')) { showToast('请先配置 API Key', 'warning'); return; }
+  
+  const btn = document.getElementById('ai-ask-btn');
+  const replyArea = document.getElementById('ai-reply-area');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin">⏳</span> AI思考中...'; }
+  if (replyArea) replyArea.innerHTML = '<span class="text-violet-400 animate-pulse">🤖 AI正在深度分析，请稍候...</span>';
+  
+  let optsText = '';
+  if (q.options) {
+    try {
+      const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+      optsText = opts.map((o, i) => `${String.fromCharCode(65 + i)}. ${o.content || o}`).join('\n');
+    } catch(e) {}
+  }
+  
+  const prompt = `你是一位专业的学习辅导老师，请对以下错题进行深度系统的答疑讲解。
+
+题目类型：${q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题'}
+题目内容：${q.stem || ''}
+${optsText ? `选项：\n${optsText}` : ''}
+正确答案：${q.answer || ''}
+${q.analysis ? `题目解析：${q.analysis}` : ''}
+
+请从以下几个维度进行深度答疑（请用清晰的结构化格式回答，每个维度用标题标注）：
+1. 【核心知识点】这道题考查的核心概念或知识点是什么？请详细解释。
+2. 【答案解析】为什么正确答案是这个？逐步推导过程。
+3. 【易错原因】学生通常在这类题目上容易犯哪些错误？为什么会错？
+4. 【记忆技巧】有什么好的记忆方法或口诀，帮助记住这个知识点？
+5. 【举一反三】给出1-2个类似的变式题目，帮助巩固理解。
+
+请用通俗易懂的语言，深入浅出地讲解。`;
+  
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 2000, temperature: 0.7 })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'API错误');
+    
+    const reply = data.choices[0].message.content.trim();
+    
+    // 保存AI回复到数据库
+    await db.questions.update(qid, { aiReply: reply, aiReplyAt: Date.now() });
+    
+    if (replyArea) replyArea.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>🤖</span> 重新答疑'; }
+    showToast('AI答疑完成，已自动保存', 'success');
+    
+    // 刷新错题列表以更新笔记标记
+    loadWrongQuestions();
+  } catch (err) {
+    if (replyArea) replyArea.innerHTML = `<span class="text-red-500">答疑失败：${escapeHtml(err.message)}</span>`;
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>🤖</span> 重试答疑'; }
+    showToast('AI答疑失败：' + err.message, 'error');
+  }
+}
+
+async function saveAIReplyToNote(qid) {
+  const replyArea = document.getElementById('ai-reply-area');
+  if (!replyArea) return;
+  const replyText = replyArea.innerText || replyArea.textContent;
+  if (!replyText || replyText.includes('点击下方按钮')) {
+    showToast('请先进行AI答疑，再保存', 'warning'); return;
+  }
+  await db.questions.update(qid, { wrongNote: replyText, wrongNoteAt: Date.now() });
+  showToast('已保存到错题笔记', 'success');
+  loadWrongQuestions();
+}
+
+// ========== 错题笔记功能 ==========
+async function showWrongNotePanel(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) { showToast('题目不存在', 'error'); return; }
+  
+  let modal = document.getElementById('wrong-note-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'wrong-note-modal';
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+  }
+  
+  const noteContent = q.wrongNote || q.aiReply || '';
+  const hasAiReply = !!q.aiReply;
+  const hasUserNote = !!q.wrongNote;
+  const noteDate = q.wrongNoteAt ? new Date(q.wrongNoteAt).toLocaleString('zh-CN') : (q.aiReplyAt ? new Date(q.aiReplyAt).toLocaleString('zh-CN') : '');
+  
+  modal.innerHTML = `
+    <div class="modal-content max-w-2xl w-full" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📔 错题笔记</h3>
+        <button class="modal-close" onclick="closeModal('wrong-note-modal')">✕</button>
+      </div>
+      <div class="p-5">
+        <!-- 题目摘要 -->
+        <div class="bg-gray-50 rounded-xl p-3 mb-4">
+          <p class="text-sm font-medium text-gray-700 line-clamp-2">${escapeHtml(q.stem || '')}</p>
+          <p class="text-xs text-gray-400 mt-1">正确答案：${escapeHtml(q.answer || '')} · 错误 ${q.wrongCount || 0} 次</p>
+        </div>
+        
+        <!-- 标签切换 -->
+        <div class="flex gap-2 mb-3">
+          ${hasAiReply ? `<button onclick="switchNoteTab('ai',${qid})" id="note-tab-ai" class="px-3 py-1.5 text-xs rounded-lg bg-violet-600 text-white">🤖 AI答疑内容</button>` : ''}
+          <button onclick="switchNoteTab('user',${qid})" id="note-tab-user" class="${hasAiReply ? 'px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50' : 'px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white'}">📝 自定义笔记</button>
+        </div>
+        
+        <!-- 笔记内容区域 -->
+        <div id="note-display-area">
+          ${noteContent
+            ? `<div class="bg-violet-50 border border-violet-200 rounded-xl p-4 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto">${escapeHtml(noteContent).replace(/\n/g, '<br>')}</div>
+               ${noteDate ? `<p class="text-xs text-gray-400 mt-2">保存时间：${noteDate}</p>` : ''}`
+            : `<div class="text-center py-8 text-gray-400">
+                <div class="text-3xl mb-2">📝</div>
+                <p class="text-sm">暂无笔记内容</p>
+                <p class="text-xs mt-1">可点击「AI答疑」生成内容，或在下方编辑自定义笔记</p>
+               </div>`
+          }
+        </div>
+        
+        <!-- 自定义笔记编辑区（始终显示） -->
+        <div class="mt-4">
+          <p class="text-xs text-gray-500 mb-2">✏️ 编辑自定义笔记：</p>
+          <textarea id="user-note-input" rows="4" placeholder="在此输入您的学习心得、记忆技巧等..." class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400 resize-none">${escapeHtml(q.wrongNote || '')}</textarea>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="flex gap-2 mt-4 flex-wrap">
+          <button onclick="saveUserNote(${qid})" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-xl hover:bg-purple-700 transition-colors">💾 保存笔记</button>
+          <button onclick="exportWrongNote(${qid})" class="px-4 py-2 bg-blue-100 text-blue-700 text-sm rounded-xl hover:bg-blue-200 transition-colors">📤 导出笔记</button>
+          ${hasAiReply ? `<button onclick="askAIAboutWrongQuestion(${qid});closeModal('wrong-note-modal')" class="px-4 py-2 bg-violet-100 text-violet-700 text-sm rounded-xl hover:bg-violet-200 transition-colors">🤖 重新AI答疑</button>` : `<button onclick="askAIAboutWrongQuestion(${qid});closeModal('wrong-note-modal')" class="px-4 py-2 bg-violet-100 text-violet-700 text-sm rounded-xl hover:bg-violet-200 transition-colors">🤖 去AI答疑</button>`}
+          <button onclick="closeModal('wrong-note-modal')" class="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-xl hover:bg-gray-200 transition-colors">关闭</button>
+        </div>
+      </div>
+    </div>`;
+  
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  modal.onclick = function(e) { if (e.target === modal) closeModal('wrong-note-modal'); };
+}
+
+async function saveUserNote(qid) {
+  const input = document.getElementById('user-note-input');
+  if (!input) return;
+  const noteText = input.value.trim();
+  await db.questions.update(qid, { wrongNote: noteText, wrongNoteAt: Date.now() });
+  showToast('笔记已保存', 'success');
+  loadWrongQuestions();
+  // 刷新显示区域
+  const displayArea = document.getElementById('note-display-area');
+  if (displayArea && noteText) {
+    displayArea.innerHTML = `<div class="bg-violet-50 border border-violet-200 rounded-xl p-4 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto">${escapeHtml(noteText).replace(/\n/g, '<br>')}</div>`;
+  }
+}
+
+async function exportWrongNote(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) return;
+  
+  // 询问导出格式
+  showExportFormatPicker(q);
+}
+
+function showExportFormatPicker(q) {
+  let modal = document.getElementById('export-format-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'export-format-modal';
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+  }
+  
+  modal.innerHTML = `
+    <div class="modal-content max-w-sm" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📤 选择导出格式</h3>
+        <button class="modal-close" onclick="closeModal('export-format-modal')">✕</button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-sm text-gray-600 mb-4">选择你希望的导出格式：</p>
+        <button onclick="doExportNote(${q.id},'markdown')" class="w-full p-4 border border-gray-200 rounded-xl hover:bg-gray-50 text-left transition-colors">
+          <div class="font-medium text-gray-800">📄 Markdown (.md)</div>
+          <div class="text-xs text-gray-500 mt-1">适合 Obsidian、Notion 等笔记软件，保留格式</div>
+        </button>
+        <button onclick="doExportNote(${q.id},'txt')" class="w-full p-4 border border-gray-200 rounded-xl hover:bg-gray-50 text-left transition-colors">
+          <div class="font-medium text-gray-800">📃 纯文本 (.txt)</div>
+          <div class="text-xs text-gray-500 mt-1">通用格式，任何软件都能打开</div>
+        </button>
+        <button onclick="doExportNote(${q.id},'json')" class="w-full p-4 border border-gray-200 rounded-xl hover:bg-gray-50 text-left transition-colors">
+          <div class="font-medium text-gray-800">🗃️ JSON (.json)</div>
+          <div class="text-xs text-gray-500 mt-1">包含完整数据，方便程序处理或导入</div>
+        </button>
+        <div class="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
+          💡 <strong>推荐：Markdown 格式</strong> - 保留 AI 答疑的结构化内容，在 Obsidian、Notion 中展示效果最佳
+        </div>
+      </div>
+    </div>`;
+  
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  modal.onclick = function(e) { if (e.target === modal) closeModal('export-format-modal'); };
+}
+
+async function doExportNote(qid, format) {
+  const q = await db.questions.get(qid);
+  if (!q) return;
+  document.getElementById('export-format-modal').classList.add('hidden');
+  const bank = await db.banks.get(q.bankId);
+  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+  const noteContent = q.wrongNote || q.aiReply || '';
+  const aiReplyContent = q.aiReply || '';
+  const userNoteContent = q.wrongNote || '';
+  const now = new Date().toLocaleString('zh-CN');
+  
+  let content = '';
+  let filename = '';
+  let mimeType = '';
+  
+  if (format === 'markdown') {
+    content = `# 错题笔记\n\n**来源题库：** ${bank?.name || '未知'}\n**题目类型：** ${typeLabel}\n**错误次数：** ${q.wrongCount || 0} 次\n**导出时间：** ${now}\n\n---\n\n## 题目\n\n${q.stem || ''}\n\n`;
+    if (q.type === 'choice' && q.options) {
+      try {
+        const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+        content += opts.map((o, i) => `${String.fromCharCode(65 + i)}. ${o.content || o}`).join('\n') + '\n\n';
+      } catch(e) {}
+    }
+    content += `**正确答案：** ${q.answer || ''}\n\n`;
+    if (q.analysis) content += `**题目解析：** ${q.analysis}\n\n`;
+    if (aiReplyContent) content += `---\n\n## 🤖 AI深度答疑\n\n${aiReplyContent}\n\n`;
+    if (userNoteContent) content += `---\n\n## 📝 我的笔记\n\n${userNoteContent}\n\n`;
+    filename = `错题笔记_${(q.stem || 'question').substring(0, 20)}.md`;
+    mimeType = 'text/markdown;charset=utf-8';
+  } else if (format === 'txt') {
+    content = `错题笔记\n${'='.repeat(40)}\n来源题库：${bank?.name || '未知'}\n题目类型：${typeLabel}\n错误次数：${q.wrongCount || 0} 次\n导出时间：${now}\n\n题目：\n${q.stem || ''}\n\n`;
+    if (q.type === 'choice' && q.options) {
+      try {
+        const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+        content += opts.map((o, i) => `${String.fromCharCode(65 + i)}. ${o.content || o}`).join('\n') + '\n\n';
+      } catch(e) {}
+    }
+    content += `正确答案：${q.answer || ''}\n`;
+    if (q.analysis) content += `题目解析：${q.analysis}\n`;
+    if (aiReplyContent) content += `\n${'─'.repeat(40)}\nAI深度答疑：\n${aiReplyContent}\n`;
+    if (userNoteContent) content += `\n${'─'.repeat(40)}\n我的笔记：\n${userNoteContent}\n`;
+    filename = `错题笔记_${(q.stem || 'question').substring(0, 20)}.txt`;
+    mimeType = 'text/plain;charset=utf-8';
+  } else if (format === 'json') {
+    const exportData = {
+      exportTime: now,
+      source: bank?.name || '未知',
+      question: {
+        type: q.type, stem: q.stem, options: q.options, answer: q.answer,
+        analysis: q.analysis, difficulty: q.difficulty, wrongCount: q.wrongCount
+      },
+      aiReply: aiReplyContent,
+      userNote: userNoteContent
+    };
+    content = JSON.stringify(exportData, null, 2);
+    filename = `错题笔记_${(q.stem || 'question').substring(0, 20)}.json`;
+    mimeType = 'application/json;charset=utf-8';
+  }
+  
+  // 下载文件
+  const blob = new Blob(['\uFEFF' + content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.replace(/[<>:"/\\|?*]/g, '_');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`已导出为 ${format.toUpperCase()} 格式`, 'success');
+}
+
+function switchNoteTab(tab, qid) {
+  // 简单的标签切换（预留扩展）
+  showToast('请直接在编辑区修改笔记内容', 'info');
+}
+
 // 开始错题复习
 async function startWrongQuiz() {
   let wrongQuestions = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0).toArray();
@@ -1244,7 +1631,7 @@ async function showQuizSourceModal() {
   const banks = await db.banks.toArray();
   const banksWithQuestions = [];
   for (const bank of banks) {
-    const qs = await db.questions.where('bankId').equals(bank.id).filter(q => q.isConfirmed).toArray();
+    const qs = await db.questions.where('bankId').equals(bank.id).toArray();
     if (qs.length > 0) {
       banksWithQuestions.push({ ...bank, questionCount: qs.length });
     }
@@ -1257,7 +1644,7 @@ async function showQuizSourceModal() {
     const links = await db.topicBanks.where('topicId').equals(topic.id).toArray();
     let count = 0;
     for (const link of links) {
-      const qs = await db.questions.where('bankId').equals(link.bankId).filter(q => q.isConfirmed).toArray();
+      const qs = await db.questions.where('bankId').equals(link.bankId).toArray();
       count += qs.length;
     }
     if (count > 0) {
@@ -1332,7 +1719,7 @@ function closeQuizSourceModal() {
 // 从题库开始刷题（通过ID）
 async function startQuizFromBank(bankId) {
   const bank = await db.banks.get(bankId);
-  let questions = await db.questions.where('bankId').equals(bankId).filter(q => q.isConfirmed).toArray();
+  let questions = await db.questions.where('bankId').equals(bankId).toArray();
   
   if (questions.length === 0) {
     showToast('该题库暂无已确认的题目', 'warning');
@@ -1364,7 +1751,7 @@ async function startQuizFromTopicById(topicId) {
   
   let allQuestions = [];
   for (const link of links) {
-    const qs = await db.questions.where('bankId').equals(link.bankId).filter(q => q.isConfirmed).toArray();
+    const qs = await db.questions.where('bankId').equals(link.bankId).toArray();
     allQuestions.push(...qs);
   }
   
@@ -2387,9 +2774,10 @@ function editQuestionInline(qId){
     </div>
     <textarea id="edit-stem-${qId}" rows="2" class="w-full border rounded-lg p-2 text-sm">${q.stem}</textarea>
     ${optionsHtml}
-    <div>
+    <div id="edit-answer-section-${qId}">
       <label class="text-xs text-gray-500 mb-1 block">答案：</label>
-      <input type="text" id="edit-answer-${qId}" value="${q.answer}" class="w-full border rounded-lg px-3 py-1.5 text-sm">
+      ${q.type==='blank'?`<div class="space-y-1" id="edit-preview-blank-answers-${qId}">${(()=>{const cnt=countBlanks(q.stem,q.answer);const parts=(q.answer||'').split('|');return Array.from({length:cnt},(_,i)=>`<div class="flex items-center gap-2"><span class="text-xs text-gray-500 whitespace-nowrap w-10">第${i+1}空</span><input type="text" data-preview-blank-idx="${i}" value="${escapeHtml(parts[i]||'')}" class="flex-1 border rounded-lg px-2 py-1 text-xs"></div>`).join('');})()}</div>`
+      :`<input type="text" id="edit-answer-${qId}" value="${q.answer}" class="w-full border rounded-lg px-3 py-1.5 text-sm">`}
     </div>
     <div>
       <label class="text-xs text-gray-500 mb-1 block">解析：</label>
@@ -2410,8 +2798,21 @@ async function saveInlineEdit(qId){
   const newStem=document.getElementById('edit-stem-'+qId).value.trim();
   const newType=document.getElementById('edit-type-'+qId).value;
   const newDiff=parseInt(document.getElementById('edit-diff-'+qId).value);
-  const newAnswer=document.getElementById('edit-answer-'+qId).value.trim();
   const newAnalysis=document.getElementById('edit-analysis-'+qId).value.trim();
+
+  // 收集答案（填空题从多输入框，其他从单输入框）
+  let newAnswer='';
+  if(q.type==='blank'){
+    const container=document.getElementById('edit-preview-blank-answers-'+qId);
+    if(container){
+      const inputs=container.querySelectorAll('[data-preview-blank-idx]');
+      newAnswer=Array.from(inputs).map(inp=>inp.value.trim()).filter(p=>p).join('|');
+    } else {
+      newAnswer=(document.getElementById('edit-answer-'+qId)||{}).value?.trim()||'';
+    }
+  } else {
+    newAnswer=(document.getElementById('edit-answer-'+qId)||{}).value?.trim()||'';
+  }
   
   if(!newStem||!newAnswer){showToast('题干和答案不能为空','warning');return;}
   
@@ -2628,7 +3029,7 @@ function updateCostEstimate(content){
 async function generateQuestionsForChunk(chunk, count, apiKey){
   const {difficulty,choiceRatio,judgeRatio,blankRatio}=state.aiConfig;
   const dLabels={1:'简单',2:'中等',3:'困难'};
-  const userPrompt=`根据以下内容生成${count}道练习题。\n\n内容：\n${chunk}\n\n要求：\n1. 题型比例为：选择题${Math.round(choiceRatio*100)}%，判断题${Math.round(judgeRatio*100)}%，填空题${Math.round(blankRatio*100)}%\n2. 难度级别：${dLabels[difficulty]}\n3. 选择题必须包含4个选项，且只有一个正确答案\n4. 判断题答案为"正确"或"错误"\n5. 每道题必须附带简洁的答案解析\n6. 输出格式为JSON数组，每项：{"type":"choice/judge/blank","stem":"题干","options":[{"label":"A","content":"..."}],"answer":"...","analysis":"...","difficulty":1-3}\n填空题和判断题不需要options字段。\n重要：只输出纯JSON数组，不要任何其他文字，不要markdown代码块。`;
+  const userPrompt=`根据以下内容生成${count}道练习题。\n\n内容：\n${chunk}\n\n要求：\n1. 题型比例为：选择题${Math.round(choiceRatio*100)}%，判断题${Math.round(judgeRatio*100)}%，填空题${Math.round(blankRatio*100)}%\n2. 难度级别：${dLabels[difficulty]}\n3. 选择题必须包含4个选项，且只有一个正确答案\n4. 判断题答案为"正确"或"错误"\n5. 每道题必须附带简洁的答案解析\n6. 输出格式为JSON数组，每项：{"type":"choice/judge/blank","stem":"题干","options":[{"label":"A","content":"..."}],"answer":"...","analysis":"...","difficulty":1-3}\n填空题和判断题不需要options字段。\n填空题特殊要求：\n- 题干中的空位用"____"标记，例如："Linux中根目录的符号是____，用户主目录的符号是____"\n- 多空填空题的answer用"|"分隔各空答案，例如："answer": "/|~"\n- 单空填空题的answer直接写答案，例如："answer": "/bin/bash"\n重要：只输出纯JSON数组，不要任何其他文字，不要markdown代码块。`;
 
   let debugLog = '=== 调试日志 ===\n';
   debugLog += '内容长度: ' + chunk.length + ' 字\n';
@@ -2906,7 +3307,7 @@ async function startAIGenerate(){
     if(allQuestions.length===0)throw new Error('所有分段均未生成题目，请重试');
 
     const bankId=await db.banks.add({name:state.currentSource.substring(0,30),description:'',source:state.currentSource,sourceContent:state.currentContent,tags:[],stats:{total:0,choice:0,judge:0,blank:0,short:0},createdAt:Date.now(),updatedAt:Date.now()});
-    const qRecs=allQuestions.map((q,i)=>({bankId,type:q.type||'choice',difficulty:q.difficulty||state.aiConfig.difficulty,stem:q.stem||'',options:JSON.stringify(q.options||[]),answer:q.answer||'',analysis:q.analysis||'',isConfirmed:false,order:i,createdAt:Date.now(),updatedAt:Date.now()}));
+    const qRecs=allQuestions.map((q,i)=>({bankId,type:q.type||'choice',difficulty:q.difficulty||state.aiConfig.difficulty,stem:q.stem||'',options:JSON.stringify(q.options||[]),answer:q.answer||'',analysis:q.analysis||'',isConfirmed:true,order:i,createdAt:Date.now(),updatedAt:Date.now()}));
     await db.questions.bulkAdd(qRecs);
     await refreshBankStats(bankId);
 
@@ -2983,7 +3384,8 @@ async function loadBanks(){
     const filter=document.getElementById('filter-type').value;
     if(search)qs=qs.filter(q=>q.stem.toLowerCase().includes(search));
     if(filter)qs=qs.filter(q=>q.type===filter);
-    const unconfirmed=qs.filter(q=>!q.isConfirmed).length;
+    const favFilter=document.getElementById('filter-favorite');
+    if(favFilter&&favFilter.checked)qs=qs.filter(q=>q.isFavorite);
     html+=`<div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <div class="flex-1 min-w-0">
@@ -2991,7 +3393,6 @@ async function loadBanks(){
           <p class="text-xs text-gray-400 mt-0.5">${bank.source} · ${new Date(bank.updatedAt).toLocaleDateString('zh-CN')}</p>
         </div>
         <div class="flex items-center gap-3 ml-4">
-          ${unconfirmed>0?`<span class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">${unconfirmed}题待确认</span>`:''}
           <button onclick="editBankName(${bank.id})" class="text-sm text-gray-400 hover:text-purple-600" title="重命名">✏️</button>
           <button onclick="exportBank(${bank.id},'${bank.name}')" class="text-sm text-gray-400 hover:text-blue-600" title="导出">📤</button>
           <button onclick="deleteBank(${bank.id})" class="text-sm text-gray-400 hover:text-red-500" title="删除">🗑️</button>
@@ -3033,14 +3434,14 @@ function renderQuestionItem(q, showCheckbox = true){
   const checkboxHtml = showCheckbox ? `<input type="checkbox" data-qid="${q.id}" onchange="updateSelectedCount()" class="q-checkbox w-4 h-4 accent-blue-600 flex-shrink-0 mt-1">` : '';
   const editBtn = `<button onclick="openEditQuestion(${q.id})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 text-purple-600 hover:bg-purple-50 transition-colors">✏️ 编辑</button>`;
   const regenBtn = `<button onclick="regenerateQuestion(${q.id})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 text-blue-600 hover:bg-blue-50 transition-colors">🔄 重生成</button>`;
-  return`<div data-qid="${q.id}" class="bg-white border border-gray-100 rounded-xl p-4 ${!q.isConfirmed?'border-l-4 border-l-orange-400':'border-l-4 border-l-transparent'}">
+  return`<div data-qid="${q.id}" class="bg-white border border-gray-100 rounded-xl p-4">
     <div class="flex items-start gap-3">
       ${checkboxHtml}
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs px-2 py-0.5 rounded-full ${tC[q.type]||'bg-gray-100 text-gray-600'}">${tL[q.type]||escapeHtml(q.type||'')}</span>
           <span class="text-xs text-gray-400 cursor-pointer" title="难度：${q.difficulty}星">${stars}</span>
-          ${!q.isConfirmed?'<span class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">待确认</span>':''}
+          ${q.isFavorite?'<span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">⭐ 已收藏</span>':''}
         </div>
         <p class="text-sm text-gray-800 mt-2 cursor-text" ondblclick="openEditQuestion(${q.id})" title="双击可编辑">${escapeHtml(q.stem||'【无题干】')}</p>
         ${optsHtml}
@@ -3048,7 +3449,7 @@ function renderQuestionItem(q, showCheckbox = true){
       </div>
     </div>
     <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
-      <button onclick="toggleConfirm(${q.id},${!q.isConfirmed})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-colors">${q.isConfirmed?'⚠️ 取消确认':'✅ 确认'}</button>
+      <button onclick="toggleFavorite(${q.id})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 ${q.isFavorite?'bg-yellow-50 border-yellow-400 text-yellow-600':'text-gray-500'} hover:bg-yellow-50 transition-colors">${q.isFavorite?'★ 取消收藏':'☆ 收藏'}</button>
       ${editBtn}
       ${regenBtn}
       <button onclick="deleteQuestion(${q.id})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 text-red-500 hover:bg-red-50 transition-colors">🗑️ 删除</button>
@@ -3463,7 +3864,24 @@ async function openQuestionModal(bankId){
 }
 function closeQuestionModal(){document.getElementById('question-modal').classList.add('hidden');document.getElementById('question-modal').classList.remove('flex');loadBanks();}
 
-// ========== 批量操作函数 ==========
+// ========== 收藏功能 ==========
+async function toggleFavorite(qid){
+  const q=await db.questions.get(qid);
+  if(!q)return;
+  const newVal=!q.isFavorite;
+  await db.questions.update(qid,{isFavorite:newVal});
+  showToast(newVal?'⭐ 已收藏':'已取消收藏','info');
+  // 刷新当前界面
+  if(quizState&&quizState.questions.some(x=>x.id===qid)){
+    // 刷题中：更新内存中的数据并刷新UI
+    const idx=quizState.questions.findIndex(x=>x.id===qid);
+    if(idx!==-1)quizState.questions[idx].isFavorite=newVal;
+    updateQuizUI();
+  }else{
+    loadBanks();
+  }
+}
+
 async function updateSelectedCount(){
   const checked=document.querySelectorAll('.q-checkbox:checked');
   const total=document.querySelectorAll('.q-checkbox').length;
@@ -3566,7 +3984,18 @@ async function openEditQuestion(qid){
       <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="edit-judge-answer" value="错误" ${q.answer==='错误'?'checked':''} class="accent-green-600"> <span class="text-sm">❌ 错误</span></label>
     </div></div>`;
   } else if(q.type==='blank'){
-    optionsHtml=`<div class="mt-3"><label class="text-xs font-medium text-gray-500">填空答案：</label><input type="text" id="edit-blank-answer" value="${escapeHtml(q.answer)}" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400 mt-1"></div>`;
+    const blankCount = countBlanks(q.stem, q.answer);
+    const blankParts = (q.answer||'').split('|');
+    optionsHtml=`<div class="mt-3">
+      <label class="text-xs font-medium text-gray-500">填空答案（共${blankCount}个空）：</label>
+      <div class="space-y-2 mt-1" id="edit-blank-answers-${qid}">
+        ${Array.from({length:blankCount},(_,i)=>`<div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 whitespace-nowrap w-12">第${i+1}空：</span>
+          <input type="text" data-blank-answer-idx="${i}" value="${escapeHtml(blankParts[i]||'')}" placeholder="第${i+1}空答案" class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+        </div>`).join('')}
+      </div>
+      <p class="text-xs text-gray-400 mt-1">💡 编辑题干时用 ____ 标记空位，答案会自动对应每个空</p>
+    </div>`;
   }
   
   const difficultyOptions=[1,2,3].map(d=>`<label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="edit-difficulty" value="${d}" ${(q.difficulty||2)===d?'checked':''}> <span>${'★'.repeat(d)}${'☆'.repeat(3-d)}</span></label>`).join('');
@@ -3679,7 +4108,14 @@ async function saveEditQuestion(qid){
   if(q.type==='judge'){
     answer=document.querySelector('input[name="edit-judge-answer"]:checked')?.value||q.answer;
   } else if(q.type==='blank'){
-    answer=document.getElementById('edit-blank-answer').value.trim();
+    const blankContainer=document.getElementById('edit-blank-answers-'+qid);
+    if(blankContainer){
+      const inputs=blankContainer.querySelectorAll('[data-blank-answer-idx]');
+      const parts=Array.from(inputs).map(inp=>inp.value.trim());
+      answer=parts.filter(p=>p).join('|');
+    } else {
+      answer=q.answer;
+    }
   } else if(q.type==='choice'){
     const optInputs=document.querySelectorAll('#edit-question-'+qid+' [data-opt]');
     const opts=Array.from(optInputs).map(i=>({label:i.dataset.opt,content:i.value.trim()}));
@@ -3716,13 +4152,8 @@ async function regenerateQuestion(qid){
 要求：
 - 难度：${q.difficulty===1?'简单':q.difficulty===3?'困难':'中等'}
 - 题干简洁明确，选项不能有歧义
-- ${q.type==='choice'?'必须有4个选项，只有一个正确答案':'答案唯一'}
-- 附带简洁的答案解析
-
-内容：${content||q.stem}
-
-请直接输出JSON格式：
-${q.type==='choice'?'{"type":"choice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"正确答案选项字母","analysis":"解析","difficulty":1-3}':q.type==='judge'?'{"type":"judge","stem":"题干","answer":"正确或错误","analysis":"解析","difficulty":1-3}':'{"type":"blank","stem":"题干，答案处用___表示","answer":"填空答案","analysis":"解析","difficulty":1-3}'}`;
+- ${q.type==='choice'?'必须有4个选项，只有一个正确答案':'答案唯一'}${q.type==='blank'?'\n- 题干中的空位用"____"标记，多空答案用"|"分隔，例如：{"type":"blank","stem":"根目录是____，家目录是____","answer":"/|~","analysis":"...","difficulty":2}':'请直接输出JSON格式：'}
+${q.type==='choice'?'{"type":"choice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"正确答案选项字母","analysis":"解析","difficulty":1-3}':q.type==='judge'?'{"type":"judge","stem":"题干","answer":"正确或错误","analysis":"解析","difficulty":1-3}':'{"type":"blank","stem":"题干，答案处用____表示","answer":"填空答案（多空用|分隔）","analysis":"解析","difficulty":1-3}'}`;
     
     const apiKey=localStorage.getItem('deepseek_api_key');
     if(!apiKey||apiKey.startsWith('sk-••')){showToast('请先配置 DeepSeek API Key','warning');return;}
@@ -3772,8 +4203,7 @@ async function openQuizMode(){
   if(!bankId){showToast('请先打开题库','warning');return;}
   const bank=await db.banks.get(bankId);
   let questions=await db.questions.where('bankId').equals(bankId).sortBy('order');
-  questions=questions.filter(q=>q.isConfirmed);
-  if(questions.length===0){showToast('请先确认至少1道题目，再开始刷题','warning');return;}
+  if(questions.length===0){showToast('该题库暂无题目','warning');return;}
   
   quizState={questions,currentIndex:0,answers:{},isRandom:true,startTime:Date.now(),bankId,bankName:bank?.name||'题库'};
   questions=shuffle(questions);
@@ -3788,9 +4218,13 @@ async function openQuizMode(){
 }
 
 function exitQuizMode(){
-  if(quizState.startTime&&Object.keys(quizState.answers).length>0){
-    if(!confirm('确定要退出吗？当前答题进度将不会保存。'))return;
+  const answeredCount = Object.keys(quizState.answers).length;
+  const totalCount = quizState.questions.length;
+  if(quizState.startTime && answeredCount > 0 && answeredCount < totalCount){
+    if(!confirm(`还有 ${totalCount - answeredCount} 道题未作答，确定退出？\n\n✅ 已答错的题目已自动记录到错题本，不会丢失。`))return;
   }
+  // 退出前刷新错题徽章
+  updateWrongBadge();
   document.getElementById('quiz-modal').classList.add('hidden');
   document.getElementById('quiz-modal').classList.remove('flex');
   quizState={questions:[],currentIndex:0,answers:{},isRandom:false,startTime:null,bankId:null,bankName:''};
@@ -3826,6 +4260,20 @@ function updateQuizUI(){
     const min=Math.floor(elapsed/60).toString().padStart(2,'0');
     const sec=(elapsed%60).toString().padStart(2,'0');
     document.getElementById('quiz-timer').textContent=`⏱ ${min}:${sec}`;
+  }
+  
+  // 更新收藏按钮状态
+  const favBtn=document.getElementById('quiz-fav-btn');
+  if(favBtn){
+    if(q.isFavorite){
+      favBtn.textContent='★ 已收藏';
+      favBtn.classList.add('bg-yellow-50','border-yellow-400','text-yellow-600');
+      favBtn.classList.remove('text-gray-600');
+    }else{
+      favBtn.textContent='☆ 收藏';
+      favBtn.classList.remove('bg-yellow-50','border-yellow-400','text-yellow-600');
+      favBtn.classList.add('text-gray-600');
+    }
   }
   
   // 渲染题目
@@ -3869,36 +4317,59 @@ function updateQuizUI(){
     const showResult=userAnswer!==undefined;
     // 填空题始终可编辑，简答题已答后只读
     const isReadonly=showResult&&q.type==='short';
-    // 解析答案中的填空数量（以|分隔）
-    const blankParts=q.answer?(q.answer.split('|').length):1;
-    const userParts=userAnswer?userAnswer.split('|'):[];
-    // 生成填空题输入框（多个空则多个输入框）
-    if(q.type==='blank'&&blankParts>1){
-      // 多空填空题
-      const inputsHtml=Array.from({length:blankParts},(_,i)=>{
-        const val=userParts[i]||'';
-        return`<div class="mb-2">
-          <label class="text-xs text-gray-500">第${i+1}空：</label>
-          <input type="text" id="quiz-blank-${i}" value="${val}" placeholder="请输入第${i+1}空答案" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('quiz-blank-next').value='${i+1<'${blankParts-1}'?'${i+1}':''}';if(document.getElementById('quiz-blank-next').value||${i}===${blankParts-1}){document.getElementById('quiz-blank-${Math.min(i+1,blankParts-1)}').focus();}}">
+    // 填空题：智能检测空的数量（复用 countBlanks）
+    let blankParts = 1;
+    if(q.type==='blank'){
+      blankParts = countBlanks(q.stem, q.answer);
+    }
+    const correctParts = (q.answer && q.answer.includes('|')) ? q.answer.split('|') : [q.answer||''];
+    while(correctParts.length < blankParts) correctParts.push('');
+    const userParts = userAnswer ? userAnswer.split('|') : [];
+    while(userParts.length < blankParts) userParts.push('');
+    const hasAnswered = userAnswer!==undefined && userAnswer!=='';
+
+    if(q.type==='blank'){
+      // ========== 填空题：统一多输入框UI（1空也显示为"第1空"输入框）==========
+      const inputsHtml = Array.from({length:blankParts},(_,i)=>{
+        const val = userParts[i]||'';
+        const correctVal = correctParts[i]||'';
+        let borderCls = 'border-gray-200';
+        let rightHint = '';
+        if(hasAnswered){
+          if(val.trim() === correctVal.trim()){
+            borderCls = 'border-green-400 bg-green-50';
+            rightHint = `<span class="text-xs text-green-600 ml-2">\u2713</span>`;
+          } else {
+            borderCls = 'border-red-300 bg-red-50';
+            rightHint = `<span class="text-xs text-red-500 ml-2">\u6b63\u786e\uff1a${escapeHtml(correctVal)}</span>`;
+          }
+        }
+        return`<div class="mb-3 flex items-center gap-3">
+          <label class="text-xs text-gray-500 whitespace-nowrap w-16 font-medium">\u7b2c${i+1}\u7a7a</label>
+          <input type="text" data-blank-idx="${i}" value="${escapeHtml(val)}" placeholder="\u8bf7\u8f93\u5165\u7b54\u6848"
+            class="flex-1 border-2 ${borderCls} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();blankInputEnter(${i},${blankParts});}"
+          >${rightHint}
         </div>`;
       }).join('');
-      optionsHtml=`<div class="mt-4">
-        ${showResult?`<div class="mb-3 p-3 bg-gray-50 rounded-xl text-sm"><span class="text-xs text-gray-500">你的答案：</span><span class="text-gray-800 font-medium ml-2">${userAnswer}</span></div>`:''}
-        <div id="quiz-blank-inputs">${inputsHtml}</div>
-        <input type="hidden" id="quiz-blank-next" value="">
-        <div class="mt-2 flex gap-2">
-          <button onclick="const inputs=document.querySelectorAll('[id^=quiz-blank-]');const vals=Array.from(inputs).map(i=>i.value).join('|');selectAnswer(vals)" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors">✓ 确认答案</button>
+
+      optionsHtml = `<div class="mt-4">
+        <div class="mb-2 p-3 bg-blue-50 rounded-xl text-xs text-blue-600">\u2709 \u5171${blankParts}\u4e2a\u7a7a\uff0c\u9010\u4e2a\u586b\u5199\u540e\u6309 Enter \u8df3\u5230\u4e0b\u4e00\u7a7a\uff0c\u6700\u540e\u4e00\u7a7a\u6309 Enter \u63d0\u4ea4</div>
+        <div id="quiz-blank-inputs" class="space-y-0">${inputsHtml}</div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="collectAndConfirmBlanks(${blankParts})" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors">\u2713 \u786e\u8ba4\u7b54\u6848</button>
+          ${hasAnswered?`<button onclick="clearBlankInputs(${blankParts})" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-xl hover:bg-gray-50 transition-colors">\u270f \u91cd\u65b0\u4f5c\u7b54</button>`:''}
         </div>
       </div>`;
     } else {
-      // 单空填空题或简答题
-      const placeholderText=q.type==='blank'?(showResult?'已作答，可修改答案':'请输入填空答案'):(showResult?'已作答，可修改答案':'请输入简答');
+      // ========== 简答题：单输入框 ==========
+      const placeholderText=showResult?'\u5df2\u4f5c\u7b54\uff0c\u53ef\u4fee\u6539\u7b54\u6848':'\u8bf7\u8f93\u5165\u7b80\u7b54';
       optionsHtml=`<div class="mt-4">
-        ${showResult?`<div class="mb-3 p-3 bg-gray-50 rounded-xl"><span class="text-xs text-gray-500">你的答案：</span><span class="text-gray-800 font-medium ml-2">${userAnswer}</span></div>`:''}
-        <input type="text" id="quiz-blank-input" value="${userAnswer}" placeholder="${placeholderText}" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 ${isReadonly?'bg-gray-50 cursor-not-allowed':''}" ${isReadonly?'readonly':''} onkeydown="if(!${isReadonly}&&event.key==='Enter'){event.preventDefault();selectAnswer(document.getElementById('quiz-blank-input').value);}">
+        ${showResult?`<div class="mb-3 p-3 bg-gray-50 rounded-xl"><span class="text-xs text-gray-500">\u4f60\u7684\u7b54\u6848\uff1a</span><span class="text-gray-800 font-medium ml-2">${escapeHtml(userAnswer)}</span></div>`:''}
+        <input type="text" id="quiz-blank-input" value="${escapeHtml(userAnswer)}" placeholder="${placeholderText}" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 ${isReadonly?'bg-gray-50 cursor-not-allowed':''}" ${isReadonly?'readonly':''} onkeydown="if(!this.readOnly&&event.key==='Enter'){event.preventDefault();selectAnswer(this.value);}">
         <div class="mt-2 flex gap-2">
-          <button onclick="selectAnswer(document.getElementById('quiz-blank-input').value)" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors">✓ 确认答案</button>
-          <button onclick="const inp=document.getElementById('quiz-blank-input');if(inp){inp.readOnly=false;inp.focus();inp.select();}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-xl hover:bg-gray-50 transition-colors">✏️ 编辑</button>
+          <button onclick="selectAnswer(document.getElementById('quiz-blank-input').value)" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors">\u2713 \u786e\u8ba4\u7b54\u6848</button>
+          <button onclick="const inp=document.getElementById('quiz-blank-input');if(inp){inp.readOnly=false;inp.focus();inp.select();}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-xl hover:bg-gray-50 transition-colors">\u270f \u7f16\u8f91</button>
         </div>
       </div>`;
     }
@@ -3934,10 +4405,83 @@ function updateQuizUI(){
     </div>
   `;
   
-  // 填空题自动聚焦输入框
-  if((q.type==='blank'||q.type==='short')&&answers[q.id]===undefined){
-    setTimeout(()=>{const inp=document.getElementById('quiz-blank-input');if(inp)inp.focus();},100);
+  // 填空题自动聚焦第一个输入框，简答题聚焦输入框
+  if(answers[q.id]===undefined){
+    setTimeout(()=>{
+      if(q.type==='blank'){
+        const firstBlank=document.querySelector('#quiz-blank-inputs [data-blank-idx="0"]');
+        if(firstBlank){firstBlank.focus();return;}
+      } else if(q.type==='short'){
+        const inp=document.getElementById('quiz-blank-input');if(inp)inp.focus();
+      }
+    },100);
   }
+}
+
+// 统一检测填空题空的数量（从题干占位符或答案分隔符判断）
+function countBlanks(stem, answer){
+  // 优先从题干中的占位符统计
+  const placeholders = (stem||'').match(/_{2,}|\uff08\s{2,}\uff09|\uff08\s*\uff09|\uff3b\s{2,}\uff3d|\[\s{2,}\]/g);
+  if(placeholders && placeholders.length > 1) return placeholders.length;
+  // fallback到答案的 | 分隔数
+  if(answer && answer.includes('|')) return answer.split('|').length;
+  return 1;
+}
+
+// 填空题Enter键：跳转下一空（最后一空则提交）
+function blankInputEnter(currentIdx, totalParts){
+  const container=document.getElementById('quiz-blank-inputs');
+  if(!container)return;
+  // 如果不是最后一空，聚焦下一个输入框
+  if(currentIdx < totalParts - 1){
+    const nextInput=container.querySelector(`[data-blank-idx="${currentIdx+1}"]`);
+    if(nextInput){nextInput.focus();}
+    return;
+  }
+  // 最后一空：检查是否全部填写，是则提交
+  const inputs=Array.from({length:totalParts},(_,i)=>container.querySelector(`[data-blank-idx="${i}"]`));
+  const vals=inputs.map(inp=>inp?inp.value.trim():'');
+  const emptyIdx=vals.findIndex(v=>v==='');
+  if(emptyIdx!==-1){
+    const emptyInput=container.querySelector(`[data-blank-idx="${emptyIdx}"]`);
+    if(emptyInput){emptyInput.focus();emptyInput.classList.add('border-orange-400');}
+    showToast(`请填写第${emptyIdx+1}空的答案`,'warning');
+    return;
+  }
+  selectAnswer(vals.join('|'));
+}
+
+// 多空填空题：收集所有空的答案并提交
+function collectAndConfirmBlanks(blankParts){
+  const container=document.getElementById('quiz-blank-inputs');
+  if(!container){return;}
+  // 使用 data-blank-idx 属性精确选取输入框
+  const inputs=Array.from({length:blankParts},(_,i)=>container.querySelector(`[data-blank-idx="${i}"]`));
+  const vals=inputs.map(inp=>inp?inp.value.trim():'');
+  // 检查是否全部填写
+  const emptyIdx=vals.findIndex(v=>v==='');
+  if(emptyIdx!==-1){
+    // 跳转到第一个空的输入框提示
+    const emptyInput=container.querySelector(`[data-blank-idx="${emptyIdx}"]`);
+    if(emptyInput){emptyInput.focus();emptyInput.classList.add('border-orange-400');}
+    showToast(`请填写第${emptyIdx+1}空的答案`,'warning');
+    return;
+  }
+  selectAnswer(vals.join('|'));
+}
+
+// 多空填空题：清空输入框重新作答
+function clearBlankInputs(blankParts){
+  const container=document.getElementById('quiz-blank-inputs');
+  if(!container)return;
+  for(let i=0;i<blankParts;i++){
+    const inp=container.querySelector(`[data-blank-idx="${i}"]`);
+    if(inp){inp.value='';inp.className=inp.className.replace(/border-(green|red|orange)-\w+/g,'border-gray-200').replace(/bg-(green|red)-\w+/g,'');}
+  }
+  // 清除当前题目的答案记录，让用户重新作答
+  const q=quizState.questions[quizState.currentIndex];
+  if(q){delete quizState.answers[q.id];}
+  updateQuizUI();
 }
 
 function selectAnswer(answer){
@@ -4098,39 +4642,61 @@ function closeQuizResult(){
   document.getElementById('quiz-result-modal').classList.remove('flex');
 }
 
-function reviewQuizAnswers(){
+function reviewQuizAnswers(filterWrongOnly){
   document.getElementById('quiz-result-modal').classList.add('hidden');
   document.getElementById('quiz-result-modal').classList.remove('flex');
   // 切换到答题卡模式：显示所有题目及用户答案
   const {questions,answers}=quizState;
+  // 筛选：只看错题模式
+  const showWrongOnly=filterWrongOnly===true;
+  const displayQuestions=showWrongOnly
+    ? questions.filter(q=>{ const ua=answers[q.id]; return ua!==undefined&&ua!==q.answer; })
+    : questions;
+
+  const renderCard=(q,i,originalIndex)=>{
+    const ua=answers[q.id];
+    const isCorrect=ua===q.answer;
+    let optsHtml='';
+    if(q.type==='choice'){
+      let opts=[];
+      try{opts=JSON.parse(q.options||'[]');}catch{}
+      optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>`<div class="text-sm ${o.label===q.answer?'text-green-600 font-bold':o.label===ua?'text-red-600 font-bold':'text-gray-500'}">${escapeHtml(o.label)}. ${escapeHtml(o.content||'')} ${o.label===q.answer?'✅':o.label===ua&&!isCorrect?'❌':''}</div>`).join('')}</div>`;
+    } else {
+      const uaDisplay=ua!==undefined?`你的答案：${escapeHtml(ua)}${isCorrect?' ✅':' ❌'}`:'未作答';
+      optsHtml=`<div class="mt-2 text-sm ${isCorrect?'text-green-600':ua!==undefined?'text-red-600':''}">正确答案：${escapeHtml(q.answer||'')} <span class="ml-2 text-xs">（${uaDisplay}）</span></div>`;
+    }
+    return`<div class="bg-white rounded-xl border ${isCorrect?'border-green-200':ua!==undefined?'border-red-200':'border-gray-200'} p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs px-2 py-0.5 rounded-full ${isCorrect?'bg-green-100 text-green-700':ua!==undefined?'bg-red-100 text-red-700':'bg-gray-100 text-gray-500'}">${isCorrect?'✅ 正确':ua!==undefined?'❌ 错误':'○ 未答'}</span>
+        <span class="text-xs text-gray-400">第${(originalIndex!==undefined?originalIndex:i)+1}题</span>
+      </div>
+      <p class="text-sm text-gray-800 font-medium">${escapeHtml(q.stem||'')}</p>
+      ${optsHtml}
+      ${q.analysis?`<div class="mt-2 text-xs text-blue-600 bg-blue-50 rounded p-2">📝 解析：${escapeHtml(q.analysis)}</div>`:''}
+    </div>`;
+  };
+
+  // 构建题目的原始序号map
+  const originalIndexMap=new Map(questions.map((q,i)=>[q.id,i]));
+
+  const wrongCount=questions.filter(q=>{ const ua=answers[q.id]; return ua!==undefined&&ua!==q.answer; }).length;
+
   document.getElementById('quiz-content').innerHTML=`
     <div class="max-w-2xl mx-auto space-y-4">
-      <h3 class="font-bold text-lg text-gray-800 mb-4">📋 答题卡</h3>
-      ${questions.map((q,i)=>{
-        const ua=answers[q.id];
-        const isCorrect=ua===q.answer;
-        let optsHtml='';
-        if(q.type==='choice'){
-          let opts=[];
-          try{opts=JSON.parse(q.options||'[]');}catch{}
-          optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>`<div class="text-sm ${o.label===q.answer?'text-green-600 font-bold':o.label===ua?'text-red-600 font-bold':'text-gray-500'}">${o.label}. ${o.content} ${o.label===q.answer?'✅':o.label===ua&&!isCorrect?'❌':''}</div>`).join('')}</div>`;
-        } else {
-          const uaDisplay=ua!==undefined?`你的答案：${ua}${isCorrect?' ✅':' ❌'}`:'未作答';
-          optsHtml=`<div class="mt-2 text-sm ${isCorrect?'text-green-600':ua!==undefined?'text-red-600':''}">正确答案：${q.answer} <span class="ml-2 text-xs">（${uaDisplay}）</span></div>`;
-        }
-        return`<div class="bg-white rounded-xl border ${isCorrect?'border-green-200':ua!==undefined?'border-red-200':'border-gray-200'} p-4">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xs px-2 py-0.5 rounded-full ${isCorrect?'bg-green-100 text-green-700':ua!==undefined?'bg-red-100 text-red-700':'bg-gray-100 text-gray-500'}">${isCorrect?'✅ 正确':ua!==undefined?'❌ 错误':'○ 未答'}</span>
-            <span class="text-xs text-gray-400">第${i+1}题</span>
-          </div>
-          <p class="text-sm text-gray-800 font-medium">${q.stem}</p>
-          ${optsHtml}
-          ${q.analysis?`<div class="mt-2 text-xs text-blue-600 bg-blue-50 rounded p-2">📝 解析：${q.analysis}</div>`:''}
-        </div>`;
-      }).join('')}
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-lg text-gray-800">📋 答题卡</h3>
+        <div class="flex gap-2">
+          <button onclick="reviewQuizAnswers(false)" class="px-3 py-1.5 text-xs rounded-lg border transition-colors ${!showWrongOnly?'bg-blue-600 text-white border-blue-600':'border-gray-300 text-gray-600 hover:bg-gray-50'}">全部 (${questions.length})</button>
+          <button onclick="reviewQuizAnswers(true)" class="px-3 py-1.5 text-xs rounded-lg border transition-colors ${showWrongOnly?'bg-red-600 text-white border-red-600':'border-red-300 text-red-600 hover:bg-red-50'}">只看错题 (${wrongCount})</button>
+        </div>
+      </div>
+      ${displayQuestions.length===0
+        ? `<div class="text-center py-12 text-gray-400"><div class="text-4xl mb-3">🎉</div><p>没有错题，全部答对了！</p></div>`
+        : displayQuestions.map((q,i)=>renderCard(q,i,originalIndexMap.get(q.id))).join('')
+      }
       <button onclick="updateQuizUI()" class="w-full py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors">← 返回刷题</button>
     </div>`;
-  document.getElementById('quiz-footer').classList.add('hidden');
+  // quiz-footer不存在，不处理`
 }
 
 // 定时器刷新
@@ -4308,7 +4874,10 @@ function startLocalServer(){
 }
 
 function closeModal(id){
-  document.getElementById(id).classList.add('hidden');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('hidden');
+  el.style.display = '';
 }
 
 function copyCommand(step){
@@ -4346,7 +4915,6 @@ function copyCommand(step){
 function showServerGuide(){
   const modal = document.getElementById('server-guide-modal');
   if(!modal){
-    // 动态创建弹窗（如果还没插入HTML）
     const m = document.createElement('div');
     m.id = 'server-guide-modal';
     m.className = 'modal';
@@ -4355,6 +4923,10 @@ function showServerGuide(){
   } else {
     modal.classList.remove('hidden');
   }
+  document.getElementById('server-guide-modal').onclick = function(e) {
+    const el = document.getElementById('server-guide-modal');
+    if (e.target === el) closeModal('server-guide-modal');
+  };
 }
 
 function showCloudGuide(){
@@ -4368,6 +4940,10 @@ function showCloudGuide(){
   } else {
     modal.classList.remove('hidden');
   }
+  document.getElementById('cloud-guide-modal').onclick = function(e) {
+    const el = document.getElementById('cloud-guide-modal');
+    if (e.target === el) closeModal('cloud-guide-modal');
+  };
 }
 
 function getServerGuideHTML(){
