@@ -1926,31 +1926,33 @@ const BOOKMARKLET_SOURCE = `(function(){
     var text=getExtractedText();
     console.log('[AI题库] 提取文本长度:',text?text.length:0);
     if(!text||text.length<30){document.getElementById('_aqb_st').textContent='内容太短('+((text||'').length)+'字)，请重新标记正文区域';return;}
-    var enc=btoa(unescape(encodeURIComponent(text.substring(0,14000))));
+    var clipped=text.substring(0,14000);
+    var enc=btoa(unescape(encodeURIComponent(clipped)));
     var src=encodeURIComponent(location.href.substring(0,200));
-    /* 构造两种 URL：
-       cleanUrl = 纯净链接（仅 marker=1 + source），数据走剪贴板
-       fullUrl  = 完整链接（含 data），作为剪贴板方案失败时的备用 */
-    var dest='https://shyws.github.io/ai-question-bank-mvp/';
+    var dest='https://shyws.github.io/quiz/';
     var cleanUrl=dest+'?marker=1&source='+src;
     var fullUrl=dest+'?marker=1&data='+encodeURIComponent(enc)+'&source='+src;
-    /* 剪贴板传输数据包：JSON格式，接收端可识别 */
-    var payload=JSON.stringify({_aqb_v:1,enc:enc,src:src});
     var st=document.getElementById('_aqb_st');
-    function showLink(clipOk){
-      /* 展示可点击的跳转链接 */
-      st.innerHTML=(clipOk
-        ? '✅ <b>数据已写入剪贴板</b>，请点击下方链接跳转题库：'
-        : '⚠️ 剪贴板写入失败，请长按复制完整链接后在浏览器打开：'
-      )+'<br><a href="'+(clipOk?cleanUrl:fullUrl)+'" target="_blank" style="display:block;margin-top:8px;padding:8px 12px;background:#4f46e5;color:#fff;border-radius:8px;text-align:center;font-size:13px;font-weight:600;text-decoration:none;">📚 打开 AI 题库</a>'
-      +(clipOk?'<br><small style="color:#6b7280;font-size:10px;">打开后题库将自动读取剪贴板内容</small>':'');
-    }
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(payload).then(function(){showLink(true);}).catch(function(){showLink(false);});
-    } else {
-      /* 兜底：document.execCommand */
-      try{var ta=document.createElement('textarea');ta.value=payload;ta.style.cssText='position:fixed;left:-9999px;top:-9999px';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);showLink(ok);}catch(e){showLink(false);}
-    }
+    st.innerHTML='提取完成（'+clipped.length.toLocaleString()+'字），请选择发送方式：<br><br>'+
+      '<button id="_aqb_aq1" style="width:100%;padding:10px 0;border:none;border-radius:10px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px;">🚀 1. 自动跳转到题库</button>'+
+      '<button id="_aqb_aq2" style="width:100%;padding:10px 0;border:none;border-radius:10px;background:#fff;color:#4f46e5;border:2px solid #4f46e5;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px;">🔗 2. 点击链接跳转</button>'+
+      '<button id="_aqb_aq3" style="width:100%;padding:10px 0;border:none;border-radius:10px;background:#fef3c7;color:#92400e;border:2px solid #fcd34d;font-size:13px;font-weight:600;cursor:pointer;">📋 3. 复制到剪贴板</button>';
+    document.getElementById('_aqb_aq1').onclick=function(){location.href=fullUrl;};
+    document.getElementById('_aqb_aq2').onclick=function(){window.open(fullUrl,'_blank');};
+    document.getElementById('_aqb_aq3').onclick=function(){
+      var btn=document.getElementById('_aqb_aq3');
+      function doCopy(){
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(clipped).then(function(){
+            btn.textContent='✅ 已复制到剪贴板，请去题库粘贴';
+            btn.style.background='#dcfce7';btn.style.color='#16a34a';btn.disabled=true;
+          }).catch(function(){btn.textContent='❌ 复制失败，请手动 Ctrl+A → Ctrl+C';});
+        } else {
+          try{var ta=document.createElement('textarea');ta.value=clipped;ta.style.cssText='position:fixed;left:-9999px;top:-9999px';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);btn.textContent=ok?'✅ 已复制到剪贴板，请去题库粘贴':'❌ 复制失败，请手动 Ctrl+A → Ctrl+C';btn.style.background=ok?'#dcfce7':'#fee2e2';btn.style.color=ok?'#16a34a':'#dc2626';}catch(e){btn.textContent='❌ 复制失败，请手动 Ctrl+A → Ctrl+C';}
+        }
+      }
+      doCopy();
+    };
   };
   bReset.onclick=function(){resetMarkers();};
   bClose.onclick=function(){tb.remove();clearHighlights();};
