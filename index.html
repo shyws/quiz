@@ -1922,7 +1922,36 @@ const BOOKMARKLET_SOURCE = `(function(){
   var bClose=document.createElement('button');bClose.className='_aqb_bc';bClose.textContent='关闭';
   bStart.onclick=function(){clearHighlights();var el=getElAtCenter();st=el;el.classList.add('_aqb_highlight');bStart.classList.add('_aqb_active');bStart.textContent='✓ 已标记开始（可重选）';document.getElementById('_aqb_st').innerHTML='✅ <span class=_aqb_ok>开始位置已标记</span><br>滚动到文章结尾，点击「标记结束」<br><span style="color:#92400e">可再次点击「标记开始」修改位置</span>';updatePreview();flash('top');};
   bEnd.onclick=function(){var el=getElAtCenter();en=el;el.classList.add('_aqb_highlight');bEnd.classList.add('_aqb_active');bEnd.textContent='✓ 已标记结束（可重选）';bSend.disabled=false;bReset.disabled=false;bReset.style.display='block';document.getElementById('_aqb_st').innerHTML='✅ <span class=_aqb_ok>范围已确定</span><br>下方可预览提取内容<br>可再次点击开始/结束修改位置';updatePreview();flash('bottom');};
-  bSend.onclick=function(){var text=getExtractedText();console.log('[AI题库] 提取文本长度:',text?text.length:0);if(!text||text.length<30){document.getElementById('_aqb_st').textContent='内容太短('+((text||'').length)+'字)，请重新标记正文区域';return;}var enc=btoa(unescape(encodeURIComponent(text.substring(0,14000))));var src=encodeURIComponent(location.href.substring(0,200));var dest=location.origin+(location.pathname||'');var url=dest+'?marker=1&data='+encodeURIComponent(enc)+'&source='+src;console.log('[AI题库] 生成跳转URL:',dest);document.getElementById('_aqb_st').innerHTML='⏳ 正在跳转到题库页面...';setTimeout(function(){try{location.href=url;}catch(e){console.error('[AI题库] 跳转失败:',e);document.getElementById('_aqb_st').innerHTML='❌ 跳转失败，请手动复制:<br><textarea style="width:100%;height:60px;font-size:10px;margin-top:4px">'+url+'</textarea>';}},300);};
+  bSend.onclick=function(){
+    var text=getExtractedText();
+    console.log('[AI题库] 提取文本长度:',text?text.length:0);
+    if(!text||text.length<30){document.getElementById('_aqb_st').textContent='内容太短('+((text||'').length)+'字)，请重新标记正文区域';return;}
+    var enc=btoa(unescape(encodeURIComponent(text.substring(0,14000))));
+    var src=encodeURIComponent(location.href.substring(0,200));
+    /* 构造两种 URL：
+       cleanUrl = 纯净链接（仅 marker=1 + source），数据走剪贴板
+       fullUrl  = 完整链接（含 data），作为剪贴板方案失败时的备用 */
+    var dest='https://shyws.github.io/ai-question-bank-mvp/';
+    var cleanUrl=dest+'?marker=1&source='+src;
+    var fullUrl=dest+'?marker=1&data='+encodeURIComponent(enc)+'&source='+src;
+    /* 剪贴板传输数据包：JSON格式，接收端可识别 */
+    var payload=JSON.stringify({_aqb_v:1,enc:enc,src:src});
+    var st=document.getElementById('_aqb_st');
+    function showLink(clipOk){
+      /* 展示可点击的跳转链接 */
+      st.innerHTML=(clipOk
+        ? '✅ <b>数据已写入剪贴板</b>，请点击下方链接跳转题库：'
+        : '⚠️ 剪贴板写入失败，请长按复制完整链接后在浏览器打开：'
+      )+'<br><a href="'+(clipOk?cleanUrl:fullUrl)+'" target="_blank" style="display:block;margin-top:8px;padding:8px 12px;background:#4f46e5;color:#fff;border-radius:8px;text-align:center;font-size:13px;font-weight:600;text-decoration:none;">📚 打开 AI 题库</a>'
+      +(clipOk?'<br><small style="color:#6b7280;font-size:10px;">打开后题库将自动读取剪贴板内容</small>':'');
+    }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(payload).then(function(){showLink(true);}).catch(function(){showLink(false);});
+    } else {
+      /* 兜底：document.execCommand */
+      try{var ta=document.createElement('textarea');ta.value=payload;ta.style.cssText='position:fixed;left:-9999px;top:-9999px';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);showLink(ok);}catch(e){showLink(false);}
+    }
+  };
   bReset.onclick=function(){resetMarkers();};
   bClose.onclick=function(){tb.remove();clearHighlights();};
   btns.appendChild(bStart);btns.appendChild(bEnd);btns.appendChild(bSend);btns.appendChild(bReset);btns.appendChild(bClose);
@@ -1976,39 +2005,58 @@ function copyBookmarkletCode(){
 // 检查 URL 参数是否携带标记内容
 function checkMarkerData(){
   console.log('[AI题库接收端] checkMarkerData 被调用');
-  console.log('[AI题库接收端] 当前URL:', location.href);
   const params = new URLSearchParams(location.search);
-  const data = params.get('data');
-  console.log('[AI题库接收端] marker参数:', params.get('marker'));
-  console.log('[AI题库接收端] data参数长度:', data ? data.length : 0);
-  console.log('[AI题库接收端] source参数:', params.get('source'));
-  if(!data) { console.log('[AI题库接收端] 无data参数，退出'); return false; }
+  if(!params.get('marker')) return false;
 
-  try{
-    // 双重解码：先 URL 解码（还原被浏览器编码的 Base64），再 Base64 解码
-    const rawBase64 = decodeURIComponent(data);
-    const text = decodeURIComponent(escape(atob(rawBase64)));
-    console.log('[AI题库接收端] Base64解码成功，文本长度:', text.length);
+  const urlData  = params.get('data');
+  const urlSource = params.get('source') || '浏览器标记';
 
-    const source = params.get('source') || '浏览器标记';
+  // 清除 URL 参数（避免刷新重复处理）
+  history.replaceState(null, '', location.origin + location.pathname);
 
-    if(text.length < 30){
-      showToast('接收到的内容过短，请重新标记','warning');
-      return false;
-    }
+  // ——— 内部：解码 Base64 文本 ———
+  function decodeEnc(enc, source){
+    try{
+      const text = decodeURIComponent(escape(atob(enc)));
+      if(text.length < 30){ showToast('接收到的内容过短，请重新标记','warning'); return false; }
+      state.markerReceivedContent = text;
+      state.markerReceivedSource = source;
+      console.log('[AI题库接收端] 解码成功，文本长度:', text.length);
+      return true;
+    }catch(e){ console.error('[AI题库接收端] 解码失败:', e); return false; }
+  }
 
-    state.markerReceivedContent = text;
-    state.markerReceivedSource = source;
+  // ——— 方案A：URL 参数直接携带 data（旧方式 / 备用链接点击） ———
+  if(urlData){
+    console.log('[AI题库接收端] 使用 URL 参数数据');
+    return decodeEnc(decodeURIComponent(urlData), urlSource);
+  }
 
-    // 清除 URL 参数（避免刷新重复处理）
-    const cleanUrl = location.origin + location.pathname;
-    history.replaceState(null, '', cleanUrl);
-
-    return true;
-  }catch(e){
-    console.error('解析标记内容失败:', e);
+  // ——— 方案B：从剪贴板读取 JSON payload（新主路，需用户授权） ———
+  if(navigator.clipboard && navigator.clipboard.readText){
+    // 异步读剪贴板；读完后再触发 UI 更新
+    navigator.clipboard.readText().then(function(raw){
+      try{
+        const payload = JSON.parse(raw);
+        if(payload && payload._aqb_v === 1 && payload.enc){
+          const src = payload.src ? decodeURIComponent(payload.src) : '浏览器标记';
+          if(decodeEnc(payload.enc, src)){
+            // 成功：自动切到标记面板并显示 received 状态
+            showMarkerPanel();
+            document.getElementById('marker-waiting').classList.add('hidden');
+            document.getElementById('marker-received').classList.remove('hidden');
+            showToast('已从剪贴板读取文章内容','success');
+          }
+        } else {
+          console.log('[AI题库接收端] 剪贴板内容不是 AI题库 payload，跳过');
+        }
+      }catch(e){ console.log('[AI题库接收端] 剪贴板内容非 JSON，跳过'); }
+    }).catch(function(e){ console.log('[AI题库接收端] 剪贴板读取被拒绝或失败:', e); });
+    // 异步读取期间返回 false，等回调自行处理
     return false;
   }
+
+  return false;
 }
 
 // 使用标记内容（进入降噪面板，可预览编辑，可跳过降噪）
