@@ -2997,36 +2997,56 @@ const COST_CONFIG={
   maxQPerChunk:15  // 每段最多15题（安全阈值，避免超出8192 token）
 };
 
-// 根据总题数和内容长度，计算最优分段策略
+// 根据总题数和内容长度，计算最优分段策略（方案A：动态分段，均匀分配）
 // 返回 { segments: [{chunkText, questionCount}], totalSegments, totalQuestions }
 function calcSegmentStrategy(totalQuestions, content){
-  const MAX_Q = COST_CONFIG.maxQPerChunk;
-  const CHUNK = COST_CONFIG.chunkSize;
-  const segments = [];
+  const MAX_Q = COST_CONFIG.maxQPerChunk;  // 每段最多题目数（15题）
+  const CHUNK = COST_CONFIG.chunkSize;     // 每段最多字数（5000字）
+  const contentLen = content.length;
 
-  // 按内容长度分割文本段
-  const textChunks = [];
-  for(let i = 0; i < content.length; i += CHUNK){
-    textChunks.push(content.substring(i, i + CHUNK));
+  // 1. 根据题数计算最少段数（每段≤MAX_Q题）
+  const minSegByQ = Math.ceil(totalQuestions / MAX_Q);
+
+  // 2. 根据字数计算最少段数（每段≤CHUNK字）
+  const minSegByChars = Math.ceil(contentLen / CHUNK);
+
+  // 3. 取最大值作为实际段数（同时满足两个约束）
+  const segmentCount = Math.max(minSegByQ, minSegByChars);
+
+  // 4. 均分文本到各段
+  const textSegments = [];
+  for(let i = 0; i < segmentCount; i++){
+    const start = Math.floor(i * contentLen / segmentCount);
+    const end = Math.floor((i + 1) * contentLen / segmentCount);
+    textSegments.push(content.substring(start, end));
   }
 
-  // 将总题数分配到各文本段，每段不超过 MAX_Q 题
+  // 5. 均匀分配题目到各段（每段≤MAX_Q题）
+  const avgQ = Math.ceil(totalQuestions / segmentCount);
+  const segments = [];
   let remaining = totalQuestions;
-  for(let i = 0; i < textChunks.length; i++){
-    const isLast = (i === textChunks.length - 1);
-    // 最后一段拿剩余所有题，其他段按比例分配但不超过 MAX_Q
+
+  for(let i = 0; i < segmentCount; i++){
+    const isLast = (i === segmentCount - 1);
+    let qForThis;
+
     if(isLast){
-      segments.push({ chunkText: textChunks[i], questionCount: remaining });
+      // 最后一段：拿剩余所有题
+      qForThis = remaining;
     } else {
-      const ratio = textChunks[i].length / content.length;
-      let qForThis = Math.max(1, Math.round(totalQuestions * ratio));
-      // 如果剩余题数-本段题数 < 文本段剩余数（至少每段1题），则需要限制本段
-      const futureMin = textChunks.length - i - 1; // 后续段至少各1题
-      const maxForThis = remaining - futureMin;
-      qForThis = Math.min(qForThis, MAX_Q, Math.max(1, maxForThis));
-      segments.push({ chunkText: textChunks[i], questionCount: qForThis });
-      remaining -= qForThis;
+      // 非最后一段：取 avgQ 和 remaining-(后续段至少各1题) 的最小值，但不超过MAX_Q
+      const maxForThis = remaining - (segmentCount - i - 1);
+      qForThis = Math.min(avgQ, maxForThis, MAX_Q);
+      qForThis = Math.max(1, qForThis); // 至少1题
     }
+
+    segments.push({ chunkText: textSegments[i], questionCount: qForThis });
+    remaining -= qForThis;
+  }
+
+  // 兜底：如果剩余题目>0（可能因四舍五入），加到最后一段
+  if(remaining > 0){
+    segments[segments.length - 1].questionCount += remaining;
   }
 
   return {
