@@ -4363,7 +4363,7 @@ function updateQuizUI(){
         else cls='border-gray-100 text-gray-400';
       }
       return`<div onclick="${hasAnswered?'':`selectAnswer('${o.label}')`}" class="quiz-option ${hasAnswered?'cursor-default':'cursor-pointer'} p-3 rounded-xl border-2 ${cls} transition-all ${hasAnswered?'':'hover:border-blue-400'} ${isSelected?'ring-2 ring-blue-400':''}">
-        <span class="font-bold mr-2">${o.label}.</span>${o.content}
+        <span class="font-bold mr-2">${o.label}.</span>${escapeHtml(o.content||'')}
       </div>`;
     }).join('')}</div>`;
   } else if(q.type==='judge'){
