@@ -440,6 +440,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
           <p class="text-xs text-gray-500 mt-1">记录错题，智能提醒复习</p>
         </div>
         <div class="flex gap-2">
+          <button onclick="showExportAllNotesModal('wrong')" class="px-4 py-2 bg-blue-100 text-blue-700 text-sm rounded-lg hover:bg-blue-200">📤 导出所有笔记</button>
           <button onclick="startWrongQuiz()" class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">🎯 错题复习</button>
           <button onclick="loadWrongQuestions()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">🔄 刷新</button>
         </div>
@@ -632,8 +633,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 <div id="topic-detail-modal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center p-4" onclick="closeTopicDetailModal()">
   <div onclick="event.stopPropagation()" class="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto fade-in">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold text-lg text-gray-800" id="topic-detail-title">🏷️ 专题详情</h3>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3 min-w-0">
+        <h3 class="font-semibold text-lg text-gray-800 truncate" id="topic-detail-title">🏷️ 专题详情</h3>
+        <button onclick="showExportAllNotesModal('topic')" class="flex-shrink-0 px-3 py-1.5 bg-blue-100 text-blue-700 text-xs rounded-lg hover:bg-blue-200">📤 导出笔记</button>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
         <button onclick="editTopic(currentTopicId)" class="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">✏️ 编辑</button>
         <button onclick="startQuizFromTopic()" class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">🎯 刷题</button>
         <button onclick="closeTopicDetailModal()" class="text-gray-400 hover:text-gray-600 text-xl">×</button>
@@ -1588,6 +1592,214 @@ async function doExportNote(qid, format) {
 function switchNoteTab(tab, qid) {
   // 简单的标签切换（预留扩展）
   showToast('请直接在编辑区修改笔记内容', 'info');
+}
+
+// ========== 导出所有笔记功能 ==========
+
+// 显示导出选项弹窗
+async function showExportAllNotesModal(source) {
+  // source: 'topic' 从专题详情页进入, 'wrong' 从错题页进入
+  // 获取所有有笔记的错题（wrongNote 或 aiReply 不为空且 wrongCount > 0）
+  let allWrong = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0 && (q.wrongNote || q.aiReply)).toArray();
+  if (allWrong.length === 0) {
+    showToast('暂无任何笔记可导出', 'info');
+    return;
+  }
+
+  // 获取专题列表
+  const topics = await db.topics.toArray();
+  // 获取题库列表
+  const banks = await db.banks.toArray();
+
+  // 预加载所有专题-题库关联，建立 bankId -> topicIds 映射
+  const allTopicBanks = await db.topicBanks.toArray();
+  const bankToTopics = {};
+  for (const link of allTopicBanks) {
+    if (!bankToTopics[link.bankId]) bankToTopics[link.bankId] = [];
+    bankToTopics[link.bankId].push(link.topicId);
+  }
+
+  // 统计每个专题/题库的笔记数量
+  let topicNoteCount = {};
+  let bankNoteCount = {};
+
+  for (const q of allWrong) {
+    // 按题库统计
+    if (!bankNoteCount[q.bankId]) bankNoteCount[q.bankId] = 0;
+    bankNoteCount[q.bankId]++;
+
+    // 按专题统计（通过预加载的映射）
+    const relatedTopicIds = bankToTopics[q.bankId] || [];
+    for (const tid of relatedTopicIds) {
+      if (!topicNoteCount[tid]) topicNoteCount[tid] = 0;
+      topicNoteCount[tid]++;
+    }
+  }
+
+  let modal = document.getElementById('export-all-notes-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'export-all-notes-modal';
+    modal.className = 'fixed inset-0 bg-black/50 z-[70] hidden items-center justify-center p-4';
+    document.body.appendChild(modal);
+  }
+
+  // 构建选项列表
+  let optionsHtml = '';
+
+  // 1. 导出所有错题笔记
+  optionsHtml += `<button onclick="doExportAllNotes('all')" class="w-full p-4 border border-gray-200 rounded-xl hover:bg-blue-50 text-left transition-colors">
+    <div class="font-medium text-gray-800">📋 导出所有错题笔记</div>
+    <div class="text-xs text-gray-500 mt-1">共 ${allWrong.length} 条笔记，包含全部题库的错题笔记</div>
+  </button>`;
+
+  // 2. 按专题导出（仅显示有笔记的专题）
+  const topicOptions = topics.filter(t => topicNoteCount[t.id]);
+  if (topicOptions.length > 0) {
+    optionsHtml += `<div class="border-t border-gray-100 pt-3 mt-3">
+      <p class="text-xs text-gray-400 mb-2 font-medium">📂 按专题导出</p>`;
+    for (const topic of topicOptions) {
+      optionsHtml += `<button onclick="doExportAllNotes('topic',${topic.id})" class="w-full p-3 border border-gray-200 rounded-xl hover:bg-blue-50 text-left transition-colors mb-2">
+        <div class="font-medium text-gray-800">${escapeHtml(topic.name)}</div>
+        <div class="text-xs text-gray-500 mt-1">${topicNoteCount[topic.id]} 条笔记</div>
+      </button>`;
+    }
+    optionsHtml += '</div>';
+  }
+
+  // 3. 按题库导出
+  const bankOptions = banks.filter(b => bankNoteCount[b.id]);
+  if (bankOptions.length > 0) {
+    optionsHtml += `<div class="border-t border-gray-100 pt-3 mt-3">
+      <p class="text-xs text-gray-400 mb-2 font-medium">📚 按题库导出</p>`;
+    for (const bank of bankOptions) {
+      optionsHtml += `<button onclick="doExportAllNotes('bank',${bank.id})" class="w-full p-3 border border-gray-200 rounded-xl hover:bg-blue-50 text-left transition-colors mb-2">
+        <div class="font-medium text-gray-800">${escapeHtml(bank.name)}</div>
+        <div class="text-xs text-gray-500 mt-1">${bankNoteCount[bank.id]} 条笔记</div>
+      </button>`;
+    }
+    optionsHtml += '</div>';
+  }
+
+  modal.innerHTML = `
+    <div class="modal-content max-w-md w-full" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📤 导出所有笔记</h3>
+        <button class="modal-close" onclick="closeModal('export-all-notes-modal')">✕</button>
+      </div>
+      <div class="p-5 space-y-2 max-h-[70vh] overflow-y-auto">
+        <p class="text-sm text-gray-600 mb-3">选择导出范围，将导出为 Markdown 文件：</p>
+        ${optionsHtml}
+        <div class="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 mt-3">
+          💡 仅导出已有笔记的错题（包含 AI 答疑内容和自定义笔记）
+        </div>
+      </div>
+    </div>`;
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  modal.onclick = function(e) { if (e.target === modal) closeModal('export-all-notes-modal'); };
+}
+
+// 执行导出所有笔记
+async function doExportAllNotes(mode, targetId) {
+  // 获取所有有笔记的错题
+  let allWrong = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0 && (q.wrongNote || q.aiReply)).toArray();
+  if (allWrong.length === 0) {
+    closeModal('export-all-notes-modal');
+    showToast('暂无笔记可导出', 'info');
+    return;
+  }
+
+  let filteredQuestions = [];
+  let exportTitle = '';
+
+  if (mode === 'all') {
+    // 导出全部
+    filteredQuestions = allWrong;
+    exportTitle = '全部错题笔记';
+  } else if (mode === 'topic') {
+    // 按专题导出
+    const topic = await db.topics.get(targetId);
+    if (!topic) { showToast('专题不存在', 'error'); return; }
+    const tLinks = await db.topicBanks.where('topicId').equals(targetId).toArray();
+    const tBankIds = new Set(tLinks.map(l => l.bankId));
+    filteredQuestions = allWrong.filter(q => tBankIds.has(q.bankId));
+    exportTitle = `专题：${topic.name}`;
+  } else if (mode === 'bank') {
+    // 按题库导出
+    const bank = await db.banks.get(targetId);
+    if (!bank) { showToast('题库不存在', 'error'); return; }
+    filteredQuestions = allWrong.filter(q => q.bankId === targetId);
+    exportTitle = `题库：${bank.name}`;
+  }
+
+  if (filteredQuestions.length === 0) {
+    closeModal('export-all-notes-modal');
+    showToast('该范围内暂无笔记', 'info');
+    return;
+  }
+
+  closeModal('export-all-notes-modal');
+
+  // 构建导出内容
+  const now = new Date().toLocaleString('zh-CN');
+  let content = `# ${exportTitle}\n\n> 导出时间：${now}  |  共 ${filteredQuestions.length} 条笔记\n\n---\n\n`;
+
+  // 预加载题库映射
+  const allBanks = await db.banks.toArray();
+  const bankMap = {};
+  for (const b of allBanks) bankMap[b.id] = b;
+
+  for (let i = 0; i < filteredQuestions.length; i++) {
+    const q = filteredQuestions[i];
+    const bank = bankMap[q.bankId];
+    const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+    const noteContent = q.wrongNote || q.aiReply || '';
+    const aiReplyContent = q.aiReply || '';
+    const userNoteContent = q.wrongNote || '';
+
+    content += `## ${i + 1}. ${escapeMd(q.stem || '未知题目').substring(0, 80)}\n\n`;
+    content += `- **来源题库：** ${bank ? bank.name : '未知'}\n`;
+    content += `- **题目类型：** ${typeLabel}\n`;
+    content += `- **错误次数：** ${q.wrongCount || 0} 次\n\n`;
+    content += `**题目：** ${escapeMd(q.stem || '')}\n\n`;
+
+    if (q.type === 'choice' && q.options) {
+      try {
+        const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+        content += opts.map((o, idx) => `${String.fromCharCode(65 + idx)}. ${escapeMd(o.content || o)}`).join('\n') + '\n\n';
+      } catch(e) {}
+    }
+
+    content += `**正确答案：** ${escapeMd(q.answer || '')}\n\n`;
+    if (q.analysis) content += `**题目解析：** ${escapeMd(q.analysis)}\n\n`;
+
+    if (aiReplyContent) content += `### 🤖 AI深度答疑\n\n${aiReplyContent}\n\n`;
+    if (userNoteContent) content += `### 📝 我的笔记\n\n${userNoteContent}\n\n`;
+
+    content += `---\n\n`;
+  }
+
+  // 下载文件
+  const safeName = exportTitle.replace(/[<>:"/\\|?*]/g, '_');
+  const filename = `${safeName}_${new Date().toISOString().slice(0,10)}.md`;
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`已导出 ${filteredQuestions.length} 条笔记`, 'success');
+}
+
+// Markdown 特殊字符转义
+function escapeMd(text) {
+  if (!text) return '';
+  return text.replace(/\\/g, '\\\\').replace(/\*/g, '\\*').replace(/_/g, '\\_').replace(/#/g, '\\#').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
 }
 
 // 开始错题复习
@@ -3714,6 +3926,22 @@ async function exportAllBanks(){
 async function handleImportFile(e){const f=e.target.files[0];if(f)await doImport(f);}
 async function handleModalImport(e){const f=e.target.files[0];if(f){closeImportModal();await doImport(f);}}
 
+// 导入时同步笔记字段到已存在的题目
+async function syncNotesToExisting(existingQ, incomingQ){
+  const noteFields=['wrongNote','wrongNoteAt','aiReply','aiReplyAt'];
+  const updates={};
+  for(const f of noteFields){
+    if(incomingQ[f]!==undefined && incomingQ[f]!==null && incomingQ[f]!==''){
+      updates[f]=incomingQ[f];
+    }
+  }
+  if(Object.keys(updates).length>0){
+    await db.questions.update(existingQ.id,updates);
+    return true;
+  }
+  return false;
+}
+
 async function doImport(file){
   try{
     const text=await file.text();const data=JSON.parse(text);
@@ -3727,17 +3955,24 @@ async function doImport(file){
       let banksSkipped = 0;
       let questionsSkipped = 0;
       
-      // 1. 如果是新版本，先导入专题
+      // 1. 如果是新版本，先处理专题（重名则复用已有专题）
       if(isNewVersion && data.topics && Array.isArray(data.topics)){
-        const topicNameMap = {}; // 专题名称 -> 新专题ID
+        const topicNameMap = {}; // 专题名称 -> 专题ID（可能是已有的）
+        let topicsSkipped = 0;
         for(const topic of data.topics){
-          const newTopicId = await db.topics.add({
-            name: topic.name,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          });
-          topicNameMap[topic.name] = newTopicId;
-          topicsCreated++;
+          const existingTopic = await db.topics.where('name').equals(topic.name).first();
+          if(existingTopic){
+            topicNameMap[topic.name] = existingTopic.id;
+            topicsSkipped++;
+          } else {
+            const newTopicId = await db.topics.add({
+              name: topic.name,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+            topicNameMap[topic.name] = newTopicId;
+            topicsCreated++;
+          }
         }
         
         // 2. 导入题库
@@ -3748,7 +3983,27 @@ async function doImport(file){
           const existingBank = await db.banks.where('name').equals(bank.name).first();
           if(existingBank){
             banksSkipped++;
-            // 仍然需要处理专题关联（如果专题是新创建的）
+            // 题库已存在，逐题检查并同步笔记
+            let notesSynced=0;
+            for(const q of questions || []){
+              const existingQ = await db.questions.where({bankId: existingBank.id, stem: q.stem}).first();
+              if(existingQ){
+                questionsSkipped++;
+                if(await syncNotesToExisting(existingQ,q)) notesSynced++;
+                continue;
+              }
+              await db.questions.add({
+                ...q,
+                id: undefined,
+                bankId: existingBank.id,
+                options: JSON.stringify(q.options || []),
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              });
+            }
+            await refreshBankStats(existingBank.id);
+            if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
+            // 补充专题关联（如果专题是新创建的）
             for(const rt of relatedTopics || []){
               if(topicNameMap[rt.name]){
                 const existingLink = await db.topicBanks.where({topicId: topicNameMap[rt.name], bankId: existingBank.id}).first();
@@ -3768,10 +4023,12 @@ async function doImport(file){
           
           // 导入题目，检测重复
           const recs=[];
+          let notesSynced=0;
           for(const q of questions || []){
-            const existingQ = await db.questions.where({bankId: newId, content: q.content}).first();
+            const existingQ = await db.questions.where({bankId: newId, stem: q.stem}).first();
             if(existingQ){
               questionsSkipped++;
+              if(await syncNotesToExisting(existingQ,q)) notesSynced++;
               continue;
             }
             recs.push({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()});
@@ -3781,6 +4038,7 @@ async function doImport(file){
           }
           await refreshBankStats(newId);
           banksImported++;
+          if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
           
           // 3. 重建专题关联（按名称查找新专题ID）
           if(relatedTopics && Array.isArray(relatedTopics)){
@@ -3798,22 +4056,44 @@ async function doImport(file){
         // 旧版本格式，无专题信息，只导入题库
         for(const bd of data.banks){
           const{id,questions,...bank}=bd;
-          
+
           // 检测题库是否已存在
           const existingBank = await db.banks.where('name').equals(bank.name).first();
           if(existingBank){
             banksSkipped++;
+            // 题库已存在，逐题检查并同步笔记
+            let notesSynced=0;
+            for(const q of questions || []){
+              const existingQ = await db.questions.where({bankId: existingBank.id, stem: q.stem}).first();
+              if(existingQ){
+                questionsSkipped++;
+                if(await syncNotesToExisting(existingQ,q)) notesSynced++;
+                continue;
+              }
+              await db.questions.add({
+                ...q,
+                id: undefined,
+                bankId: existingBank.id,
+                options: JSON.stringify(q.options || []),
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              });
+            }
+            await refreshBankStats(existingBank.id);
+            if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
             continue;
           }
-          
+
           const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
-          
+
           // 导入题目，检测重复
           const recs=[];
+          let notesSynced=0;
           for(const q of questions || []){
-            const existingQ = await db.questions.where({bankId: newId, content: q.content}).first();
+            const existingQ = await db.questions.where({bankId: newId, stem: q.stem}).first();
             if(existingQ){
               questionsSkipped++;
+              if(await syncNotesToExisting(existingQ,q)) notesSynced++;
               continue;
             }
             recs.push({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()});
@@ -3823,6 +4103,7 @@ async function doImport(file){
           }
           await refreshBankStats(newId);
           banksImported++;
+          if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
         }
       }
       
@@ -3848,11 +4129,13 @@ async function doImport(file){
       if(existingBank){
         // 题库已存在，只追加不重复的题目
         targetBankId = existingBank.id;
+        let notesSynced=0;
         
         for(const q of questions || []){
           const existingQ = await db.questions.where({bankId: targetBankId, content: q.content}).first();
           if(existingQ){
             questionsSkipped++;
+            if(await syncNotesToExisting(existingQ,q)) notesSynced++;
             continue;
           }
           await db.questions.add({
@@ -3865,6 +4148,7 @@ async function doImport(file){
           });
         }
         await refreshBankStats(targetBankId);
+        if(notesSynced>0) showToast(`已同步 ${notesSynced} 条笔记到已有题目`,'info');
       } else {
         // 题库不存在，创建新题库并导入所有题目
         targetBankId = await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
