@@ -382,11 +382,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
   <div id="page-bank" class="page hidden">
     <!-- 题库子标签 -->
     <div class="flex gap-1 bg-white rounded-xl p-1 shadow-sm mb-6 border border-gray-100">
-      <button onclick="switchBankTab('banks')" id="bank-tab-banks" class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all bg-primary-600 text-white">📚 题库</button>
-      <button onclick="switchBankTab('topics')" id="bank-tab-topics" class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-700">🏷️ 专题</button>
-      <button onclick="switchBankTab('wrong')" id="bank-tab-wrong" class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-700 relative">
-        ❌ 错题
+      <button onclick="switchBankTab('banks')" id="bank-tab-banks" class="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all bg-primary-600 text-white">📚 题库</button>
+      <button onclick="switchBankTab('topics')" id="bank-tab-topics" class="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-700">🏷️ 专题</button>
+      <button onclick="switchBankTab('wrong-review')" id="bank-tab-wrong-review" class="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-700 relative">
+        ❌ 复习
         <span id="wrong-count-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+      </button>
+      <button onclick="switchBankTab('wrong-record')" id="bank-tab-wrong-record" class="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-700 relative">
+        📝 记录
+        <span id="wrong-record-badge" class="hidden absolute -top-1 -right-1 bg-gray-400 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
       </button>
     </div>
 
@@ -420,7 +424,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
     <!-- 专题子内容 -->
     <div id="bank-subpage-topics" class="bank-subpage hidden">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="font-semibold text-gray-800">🏷️ 我的专题</h3>
+        <div class="flex items-center gap-3">
+          <h3 class="font-semibold text-gray-800">🏷️ 我的专题</h3>
+          <button onclick="showRecycleBinModal()" id="recycle-bin-btn" class="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1">🗑️ 回收站<span id="recycle-bin-badge" class="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
+        </div>
         <button onclick="showCreateTopicModal()" class="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors">+ 新建专题</button>
       </div>
       <div id="topic-list"></div>
@@ -432,50 +439,61 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
       </div>
     </div>
 
-    <!-- 错题子内容 -->
-    <div id="bank-subpage-wrong" class="bank-subpage hidden">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h3 class="font-semibold text-gray-800">❌ 错题复习</h3>
-          <p class="text-xs text-gray-500 mt-1">记录错题，智能提醒复习</p>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="showExportAllNotesModal('wrong')" class="px-4 py-2 bg-blue-100 text-blue-700 text-sm rounded-lg hover:bg-blue-200">📤 导出所有笔记</button>
-          <button onclick="startWrongQuiz()" class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">🎯 错题复习</button>
-          <button onclick="loadWrongQuestions()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">🔄 刷新</button>
-        </div>
-      </div>
-      <div id="wrong-filter-bar" class="flex gap-3 mb-4 flex-wrap">
-        <select id="wrong-filter-source" onchange="loadWrongQuestions()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+    <!-- 错题复习子内容 -->
+    <div id="bank-subpage-wrong-review" class="bank-subpage hidden">
+      <!-- 筛选栏 -->
+      <div class="flex gap-2 mb-4 flex-wrap">
+        <select id="wrong-filter-source" onchange="loadWrongQuestions()" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-400">
           <option value="">全部来源</option>
         </select>
-        <select id="wrong-filter-level" onchange="loadWrongQuestions()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <select id="wrong-filter-level" onchange="loadWrongQuestions()" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-400">
           <option value="">全部难度</option>
           <option value="1">⭐ 简单</option>
           <option value="2">⭐⭐ 中等</option>
           <option value="3">⭐⭐⭐ 困难</option>
         </select>
-        <label class="flex items-center gap-2 text-sm text-gray-600">
+        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none px-3 py-2 border border-gray-200 rounded-xl hover:bg-red-50 transition-colors">
           <input type="checkbox" id="wrong-filter-due" onchange="loadWrongQuestions()" class="w-4 h-4 accent-red-500">
-          仅显示待复习
+          <span>🔔 仅显示待复习</span>
         </label>
       </div>
+      <!-- 统计栏 + 开始按钮 -->
+      <div id="wrong-start-section" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <span class="text-sm text-gray-600">共 <strong id="wrong-total-count">0</strong> 道错题</span>
+            <span class="text-xs text-red-500 ml-3" id="wrong-due-hint"></span>
+          </div>
+          <button onclick="startWrongQuiz()" class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">🎯 开始刷错题</button>
+        </div>
+      </div>
+      <!-- 错题列表（可滚动全量） -->
       <div id="wrong-question-list"></div>
+      <!-- 空状态 -->
       <div id="wrong-empty" class="hidden text-center py-16">
         <div class="text-6xl mb-4">🎉</div>
-        <h3 class="text-lg font-semibold text-gray-600">暂无错题记录</h3>
+        <h3 class="text-lg font-semibold text-gray-600">暂无错题</h3>
         <p class="text-gray-400 text-sm mt-2">刷题时答错的题目会出现在这里</p>
       </div>
-      <div id="wrong-start-section" class="hidden mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="font-medium text-blue-800">❌ 待复习题目：<span id="wrong-total-count">0</span> 道</p>
-            <p class="text-sm text-blue-600 mt-1" id="wrong-due-hint"></p>
-          </div>
-          <button onclick="startWrongQuiz()" class="px-5 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
-            🎯 开始错题复习
-          </button>
+    </div>
+
+    <!-- 错题记录子内容 -->
+    <div id="bank-subpage-wrong-record" class="bank-subpage hidden">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="font-semibold text-gray-800">📝 错题记录</h3>
+          <p class="text-xs text-gray-500 mt-1">所有做错过的题目，答对后不自动删除，笔记随题目永久保存，手动删除记录不影响笔记</p>
         </div>
+        <div class="flex gap-2">
+          <button onclick="showExportAllNotesModal('wrong')" class="px-3 py-2 bg-blue-100 text-blue-700 text-sm rounded-lg hover:bg-blue-200">📤 导出笔记</button>
+          <button onclick="loadWrongRecord()" class="px-3 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">🔄 刷新</button>
+        </div>
+      </div>
+      <div id="wrong-record-list"></div>
+      <div id="wrong-record-empty" class="hidden text-center py-16">
+        <div class="text-6xl mb-4">📝</div>
+        <h3 class="text-lg font-semibold text-gray-600">错题记录暂无数据</h3>
+        <p class="text-gray-400 text-sm mt-2">所有做错过的题目都会保存在这里</p>
       </div>
     </div>
   </div>
@@ -744,6 +762,91 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
   </div>
 </div>
 
+<!-- 错题本模态框 -->
+<div id="wrong-book-modal" class="fixed inset-0 bg-black/50 z-[80] hidden items-center justify-center p-4" onclick="closeModal('wrong-book-modal')">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col fade-in">
+    <div class="flex items-center justify-between p-4 border-b border-gray-100">
+      <div class="flex items-center gap-4 flex-1">
+        <h3 class="font-bold text-lg text-gray-800" id="wrong-book-title">📚 错题本</h3>
+        <!-- 两个标签页 -->
+        <div class="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+          <button id="wrong-book-tab-review" onclick="switchWrongBookTab('review')" class="px-3 py-1 text-xs rounded-md transition-all bg-white text-gray-800 shadow-sm font-medium">错题复习</button>
+          <button id="wrong-book-tab-record" onclick="switchWrongBookTab('record')" class="px-3 py-1 text-xs rounded-md transition-all text-gray-600 hover:text-gray-800">错题记录</button>
+        </div>
+      </div>
+      <button onclick="closeModal('wrong-book-modal')" class="text-gray-400 hover:text-gray-600 text-xl ml-4">✕</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4" id="wrong-book-content">
+      <!-- 动态加载内容 -->
+    </div>
+  </div>
+</div>
+
+<!-- 回收站弹窗 -->
+<div id="recycle-bin-modal" class="fixed inset-0 bg-black/50 z-[80] hidden items-center justify-center p-4" onclick="closeModal('recycle-bin-modal')">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col fade-in">
+    <div class="flex items-center justify-between p-4 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-gray-800">🗑️ 回收站</h3>
+      <div class="flex items-center gap-2">
+        <button onclick="clearRecycleBin()" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg hover:bg-red-100 transition-colors">🗑️ 清空回收站</button>
+        <button onclick="closeModal('recycle-bin-modal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4" id="recycle-bin-content">
+      <!-- 动态加载内容 -->
+    </div>
+  </div>
+</div>
+
+<!-- 导入确认弹窗 -->
+<div id="import-confirm-modal" class="fixed inset-0 bg-black/50 z-[90] hidden items-center justify-center p-4" onclick="cancelImport()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col fade-in">
+    <div class="flex items-center justify-between p-4 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-gray-800">📥 导入确认</h3>
+      <button onclick="cancelImport()" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4" id="import-confirm-content">
+      <!-- 动态加载内容 -->
+    </div>
+    <div class="p-4 border-t border-gray-100 flex justify-end gap-3">
+      <button onclick="cancelImport()" class="px-5 py-2 text-gray-500 text-sm hover:text-gray-700 rounded-xl hover:bg-gray-50">取消</button>
+      <button onclick="confirmImport()" class="px-5 py-2 bg-primary-600 text-white text-sm rounded-xl hover:bg-primary-700">确认导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 导入结果弹窗 -->
+<div id="import-result-modal" class="fixed inset-0 bg-black/50 z-[90] hidden items-center justify-center p-4" onclick="closeModal('import-result-modal')">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col fade-in">
+    <div class="flex items-center justify-between p-4 border-b border-gray-100">
+      <h3 class="font-bold text-lg text-gray-800">📥 导入结果</h3>
+      <button onclick="closeModal('import-result-modal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4" id="import-result-content">
+      <!-- 动态加载内容 -->
+    </div>
+    <div class="p-4 border-t border-gray-100 flex justify-end">
+      <button onclick="closeModal('import-result-modal')" class="px-5 py-2 bg-primary-600 text-white text-sm rounded-xl hover:bg-primary-700">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 空题库确认弹窗 -->
+<div id="empty-bank-confirm-modal" class="fixed inset-0 bg-black/50 z-[95] hidden items-center justify-center p-4" onclick="cancelEmptyBankConfirm()">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl w-full max-w-md fade-in">
+    <div class="p-6 text-center">
+      <div class="text-5xl mb-4">⚠️</div>
+      <h3 class="font-bold text-lg text-gray-800 mb-2">导入文件中题库无题目</h3>
+      <p id="empty-bank-confirm-text" class="text-sm text-gray-600 mb-4"></p>
+      <p class="text-xs text-red-500 mb-6">确认后，该题库本地所有题目将移入回收站</p>
+      <div class="flex gap-3 justify-center">
+        <button onclick="cancelEmptyBankConfirm()" class="px-5 py-2 text-gray-500 text-sm rounded-xl hover:bg-gray-50">取消导入</button>
+        <button onclick="confirmEmptyBankOverwrite()" class="px-5 py-2 bg-red-600 text-white text-sm rounded-xl hover:bg-red-700">确认覆盖</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CDN依赖 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -752,15 +855,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 
 <script>
 const state={currentTab:'import',currentContent:null,currentSource:'',aiConfig:{count:10,difficulty:2,choiceRatio:.6,judgeRatio:.3,blankRatio:.1},isGenerating:false,currentBankId:null,currentGeneratedQuestions:[]};
+let currentWrongBookTab = 'review'; // 'review' 或 'record'
 
 const db=new Dexie('AIQuestionBank');
-db.version(2).stores({
+db.version(6).stores({
   banks:'++id,name,createdAt,updatedAt',
   questions:'++id,bankId,type,difficulty,isConfirmed,isFavorite,order,stats',
   topics:'++id,name,createdAt,updatedAt',
-  topicBanks:'++id,topicId,bankId'
+  topicBanks:'++id,topicId,bankId',
+  wrongBook:'++id,questionId,bankId,addedAt,removed,wrongNote,wrongNoteAt,aiReply,aiReplyAt',
+  recycleBin:'++id,originalBankId,originalQuestionId,bankName,deletedAt,reason'
 });
-// 迁移提示：新版本添加了专题和错题功能
+// v6: 新增 recycleBin 回收站表，用于导入覆盖时暂存被删除的题目
+// recycleBin 存储题目完整快照 + originalBankId/originalQuestionId/bankName/deletedAt/reason
 
 // ========== 专题管理 ==========
 let currentTopicId = null; // 当前编辑的专题ID
@@ -770,7 +877,7 @@ let currentBankTab = 'banks'; // 当前题库子标签
 async function switchBankTab(tab) {
   currentBankTab = tab;
   // 更新标签样式
-  ['banks', 'topics', 'wrong'].forEach(t => {
+  ['banks', 'topics', 'wrong-review', 'wrong-record'].forEach(t => {
     const btn = document.getElementById('bank-tab-' + t);
     if (btn) {
       if (t === tab) {
@@ -789,7 +896,8 @@ async function switchBankTab(tab) {
   // 加载对应内容
   if (tab === 'banks') loadBanks();
   else if (tab === 'topics') loadTopics();
-  else if (tab === 'wrong') loadWrongQuestions();
+  else if (tab === 'wrong-review') loadWrongQuestions();
+  else if (tab === 'wrong-record') loadWrongRecord();
 }
 
 // 加载专题列表
@@ -1103,9 +1211,9 @@ async function loadWrongQuestions() {
     }
   }
   
-  // 渲染错题列表
+  // 渲染错题列表（全量显示，可滚动）
   let html = '';
-  for (const q of wrongQuestions.slice(0, 20)) { // 只显示前20道
+  for (const q of wrongQuestions) {
     const bank = await db.banks.get(q.bankId);
     const isDue = isDueForReview(q);
     const stars = '⭐'.repeat(q.difficulty || 2);
@@ -1135,12 +1243,74 @@ async function loadWrongQuestions() {
       </div>
     </div>`;
   }
-  
-  if (wrongQuestions.length > 20) {
-    html += `<p class="text-center text-sm text-gray-400 py-2">还有 ${wrongQuestions.length - 20} 道错题...</p>`;
-  }
-  
+
   list.innerHTML = html;
+}
+
+// ========== 错题记录（直接读 questions 表，不依赖 wrongBook） ==========
+async function loadWrongRecord() {
+  const list = document.getElementById('wrong-record-list');
+  const empty = document.getElementById('wrong-record-empty');
+  if (!list || !empty) return;
+
+  // 从 questions 表读所有 totalWrongCount > 0 的题（按最后答错时间倒序）
+  let allWrong = await db.questions.filter(q => q.totalWrongCount && q.totalWrongCount > 0).toArray();
+  allWrong.sort((a, b) => (b.lastWrongAt || b.updatedAt || 0) - (a.lastWrongAt || a.updatedAt || 0));
+
+  if (allWrong.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  let html = `<div class="mb-3 text-sm text-gray-500">共 <strong>${allWrong.length}</strong> 道错题记录</div><div class="space-y-3">`;
+  for (const q of allWrong) {
+    const bank = await db.banks.get(q.bankId);
+    const hasNote = !!(q.wrongNote || q.aiReply);
+    const lastWrongDate = q.lastWrongAt ? new Date(q.lastWrongAt).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '未知时间';
+    const qJson = JSON.stringify(q).replace(/'/g, "\\'");
+    html += `
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 fade-in">
+        <div class="flex items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-2">
+              <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+              <span class="text-xs text-red-500 font-medium">累计❌ ${q.totalWrongCount}次</span>
+              ${q.wrongCount && q.wrongCount > 0 ? `<span class="text-xs text-orange-500 font-medium">复习中❌ ${q.wrongCount}次</span>` : '<span class="text-xs text-green-500 font-medium">✓ 已掌握</span>'}
+              ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
+              <span class="text-xs text-gray-400">📚 ${escapeHtml(bank?.name || '未知')}</span>
+              <span class="text-xs text-gray-400">最近答错：${lastWrongDate}</span>
+            </div>
+            <p class="text-sm text-gray-800 line-clamp-2">${escapeHtml(q.stem || '')}</p>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+          <button onclick='showWrongQuestionInModal(${qJson})' class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看</button>
+          <button onclick='openEditQuestionFromWrong(${q.id})' class="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200">✏️ 编辑</button>
+          <button onclick='askAIAboutWrongQuestion(${q.id})' class="px-3 py-1.5 bg-violet-100 text-violet-700 text-xs rounded-lg hover:bg-violet-200">🤖 AI答疑</button>
+          <button onclick='showWrongNotePanel(${q.id})' class="px-3 py-1.5 ${hasNote ? 'bg-purple-100 text-purple-700' : 'bg-gray-50 text-gray-500'} text-xs rounded-lg hover:bg-purple-100">📔 笔记</button>
+          <button onclick='deleteWrongRecord(${q.id})' class="px-3 py-1.5 bg-red-50 text-red-500 text-xs rounded-lg hover:bg-red-100 ml-auto">🗑️ 移出记录</button>
+        </div>
+      </div>`;
+  }
+  html += '</div>';
+  list.innerHTML = html;
+}
+
+// 从错题记录移出（清除 totalWrongCount=0，笔记保留在题目中）
+async function deleteWrongRecord(qid) {
+  if (!confirm('确认移出此错题记录？\n（题目本身和笔记不会删除，只是不再显示在错题记录中）')) return;
+  await db.questions.update(qid, { totalWrongCount: 0 });
+  // 同步 wrongBook 表：标记已移除
+  const wbEntry = await db.wrongBook.where('questionId').equals(qid).first().catch(() => null);
+  if (wbEntry) {
+    await db.wrongBook.update(wbEntry.id, { removed: true });
+  }
+  showToast('已移出错题记录', 'success');
+  loadWrongRecord();
+  updateWrongBadge();
+  updateWrongRecordBadge();
 }
 
 // 判断是否需要复习（基于艾宾浩斯遗忘曲线）
@@ -1356,15 +1526,17 @@ ${q.analysis ? `题目解析：${q.analysis}` : ''}
     
     const reply = data.choices[0].message.content.trim();
     
-    // 保存AI回复到数据库
+    // 保存AI回复到题目表（永久保存）
     await db.questions.update(qid, { aiReply: reply, aiReplyAt: Date.now() });
+    // 同步到错题本（如果题目在错题本中）
+    await syncNoteToWrongBook(qid);
     
     if (replyArea) replyArea.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
     if (btn) { btn.disabled = false; btn.innerHTML = '<span>🤖</span> 重新答疑'; }
     showToast('AI答疑完成，已自动保存', 'success');
     
     // 刷新错题列表以更新笔记标记
-    loadWrongQuestions();
+    refreshCurrentWrongPage();
   } catch (err) {
     if (replyArea) replyArea.innerHTML = `<span class="text-red-500">答疑失败：${escapeHtml(err.message)}</span>`;
     if (btn) { btn.disabled = false; btn.innerHTML = '<span>🤖</span> 重试答疑'; }
@@ -1380,8 +1552,10 @@ async function saveAIReplyToNote(qid) {
     showToast('请先进行AI答疑，再保存', 'warning'); return;
   }
   await db.questions.update(qid, { wrongNote: replyText, wrongNoteAt: Date.now() });
+  // 同步到错题本
+  await syncNoteToWrongBook(qid);
   showToast('已保存到错题笔记', 'success');
-  loadWrongQuestions();
+  refreshCurrentWrongPage();
 }
 
 // ========== 错题笔记功能 ==========
@@ -1459,9 +1633,12 @@ async function saveUserNote(qid) {
   const input = document.getElementById('user-note-input');
   if (!input) return;
   const noteText = input.value.trim();
+  // 笔记永久保存在题目表（questions）中
   await db.questions.update(qid, { wrongNote: noteText, wrongNoteAt: Date.now() });
+  // 同步到错题本（如果题目在错题本中）
+  await syncNoteToWrongBook(qid);
   showToast('笔记已保存', 'success');
-  loadWrongQuestions();
+  refreshCurrentWrongPage();
   // 刷新显示区域
   const displayArea = document.getElementById('note-display-area');
   if (displayArea && noteText) {
@@ -1599,8 +1776,8 @@ function switchNoteTab(tab, qid) {
 // 显示导出选项弹窗
 async function showExportAllNotesModal(source) {
   // source: 'topic' 从专题详情页进入, 'wrong' 从错题页进入
-  // 获取所有有笔记的错题（wrongNote 或 aiReply 不为空且 wrongCount > 0）
-  let allWrong = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0 && (q.wrongNote || q.aiReply)).toArray();
+  // 获取所有有笔记的题目（wrongNote 或 aiReply 不为空，与错题状态无关）
+  let allWrong = await db.questions.filter(q => q.wrongNote || q.aiReply).toArray();
   if (allWrong.length === 0) {
     showToast('暂无任何笔记可导出', 'info');
     return;
@@ -1704,7 +1881,7 @@ async function showExportAllNotesModal(source) {
 // 执行导出所有笔记
 async function doExportAllNotes(mode, targetId) {
   // 获取所有有笔记的错题
-  let allWrong = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0 && (q.wrongNote || q.aiReply)).toArray();
+  let allWrong = await db.questions.filter(q => q.wrongNote || q.aiReply).toArray();
   if (allWrong.length === 0) {
     closeModal('export-all-notes-modal');
     showToast('暂无笔记可导出', 'info');
@@ -3716,6 +3893,9 @@ function renderQuestionItem(q, showCheckbox = true){
   const checkboxHtml = showCheckbox ? `<input type="checkbox" data-qid="${q.id}" onchange="updateSelectedCount()" class="q-checkbox w-4 h-4 accent-blue-600 flex-shrink-0 mt-1">` : '';
   const editBtn = `<button onclick="openEditQuestion(${q.id})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 text-purple-600 hover:bg-purple-50 transition-colors">✏️ 编辑</button>`;
   const regenBtn = `<button onclick="regenerateQuestion(${q.id})" class="text-xs px-3 py-1 rounded-lg border border-gray-200 text-blue-600 hover:bg-blue-50 transition-colors">🔄 重生成</button>`;
+  // 错题笔记标记
+  const hasWrongNote = !!(q.wrongNote || q.aiReply);
+  const wrongNoteLabel = hasWrongNote ? `<button onclick="showWrongNotePanel(${q.id})" class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full hover:bg-purple-200 cursor-pointer" title="查看错题笔记">📔 错题笔记</button>` : '';
   return`<div data-qid="${q.id}" class="bg-white border border-gray-100 rounded-xl p-4">
     <div class="flex items-start gap-3">
       ${checkboxHtml}
@@ -3724,6 +3904,7 @@ function renderQuestionItem(q, showCheckbox = true){
           <span class="text-xs px-2 py-0.5 rounded-full ${tC[q.type]||'bg-gray-100 text-gray-600'}">${tL[q.type]||escapeHtml(q.type||'')}</span>
           <span class="text-xs text-gray-400 cursor-pointer" title="难度：${q.difficulty}星">${stars}</span>
           ${q.isFavorite?'<span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">⭐ 已收藏</span>':''}
+          ${wrongNoteLabel}
         </div>
         <p class="text-sm text-gray-800 mt-2 cursor-text" ondblclick="openEditQuestion(${q.id})" title="双击可编辑">${escapeHtml(q.stem||'【无题干】')}</p>
         ${optsHtml}
@@ -3942,262 +4123,591 @@ async function syncNotesToExisting(existingQ, incomingQ){
   return false;
 }
 
+// ========== 回收站功能 ==========
+async function moveToRecycleBin(questions, bankId, bankName, reason){
+  if(!questions||questions.length===0) return;
+  const now=Date.now();
+  const records=questions.map(q=>({
+    ...q,
+    id:undefined,
+    originalBankId:bankId,
+    originalQuestionId:q.id,
+    bankName:bankName||'未知题库',
+    deletedAt:now,
+    reason:reason||'import-overwrite'
+  }));
+  await db.recycleBin.bulkAdd(records);
+  await updateRecycleBinBadge();
+}
+
+async function restoreFromRecycleBin(recycleId){
+  const item=await db.recycleBin.get(recycleId);
+  if(!item)return;
+  // 检查原题库是否仍存在
+  const bank=await db.banks.get(item.originalBankId);
+  if(!bank){
+    showToast('原题库已删除，无法恢复','error');
+    return;
+  }
+  // 恢复题目到原题库
+  const{originalBankId,originalQuestionId,bankName,deletedAt,reason,...qData}=item;
+  await db.questions.add({
+    ...qData,
+    bankId:item.originalBankId,
+    updatedAt:Date.now()
+  });
+  await db.recycleBin.delete(recycleId);
+  showToast('题目已恢复','success');
+  showRecycleBinModal(); // 刷新回收站
+}
+
+async function clearRecycleBin(){
+  const count=await db.recycleBin.count();
+  if(count===0){showToast('回收站为空','info');return;}
+  if(!confirm(`确定要永久删除回收站中的 ${count} 条题目吗？此操作不可撤销！`))return;
+  await db.recycleBin.clear();
+  showToast('回收站已清空','success');
+  showRecycleBinModal();
+  updateRecycleBinBadge();
+}
+
+async function updateRecycleBinBadge(){
+  const count=await db.recycleBin.count();
+  const badge=document.getElementById('recycle-bin-badge');
+  if(!badge)return;
+  if(count>0){
+    badge.textContent=count;
+    badge.classList.remove('hidden');
+  }else{
+    badge.classList.add('hidden');
+  }
+}
+
+async function showRecycleBinModal(){
+  const items=await db.recycleBin.orderBy('deletedAt').reverse().toArray();
+  const container=document.getElementById('recycle-bin-content');
+  if(items.length===0){
+    container.innerHTML='<div class="text-center py-12"><div class="text-5xl mb-3">🗑️</div><p class="text-gray-400">回收站为空</p></div>';
+  }else{
+    container.innerHTML=items.map(item=>{
+      const timeAgo=formatTimeAgo(item.deletedAt);
+      const stemText=item.stem||item.content||'无题干';
+      const stemPreview=stemText.length>60?stemText.substring(0,60)+'...':stemText;
+      const answerText=item.answer||'';
+      const answerPreview=answerText.length>40?answerText.substring(0,40)+'...':answerText;
+      return `<div class="border border-gray-100 rounded-xl p-4 mb-3 hover:bg-gray-50 transition-colors">
+        <div class="flex justify-between items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-800 font-medium">${escapeHtml(stemPreview)}</p>
+            ${answerPreview?`<p class="text-xs text-gray-500 mt-1">答案：${escapeHtml(answerPreview)}</p>`:''}
+            <p class="text-xs text-gray-400 mt-2">来源：${escapeHtml(item.bankName)} · ${item.reason==='import-overwrite'?'导入覆盖删除':'手动删除'} · ${timeAgo}</p>
+          </div>
+          <button onclick="restoreFromRecycleBin(${item.id})" class="flex-shrink-0 px-3 py-1.5 bg-green-50 text-green-600 text-xs rounded-lg hover:bg-green-100 transition-colors">♻️ 恢复</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('recycle-bin-modal').classList.remove('hidden');
+  document.getElementById('recycle-bin-modal').classList.add('flex');
+}
+
+function formatTimeAgo(ts){
+  const diff=Date.now()-ts;
+  if(diff<60000)return '刚刚';
+  if(diff<3600000)return Math.floor(diff/60000)+'分钟前';
+  if(diff<86400000)return Math.floor(diff/3600000)+'小时前';
+  if(diff<604800000)return Math.floor(diff/86400000)+'天前';
+  return new Date(ts).toLocaleDateString('zh-CN');
+}
+
+// ========== 导入逻辑（v6 覆盖模式） ==========
+let pendingImportData=null; // 暂存导入数据，等待用户确认
+
 async function doImport(file){
   try{
-    const text=await file.text();const data=JSON.parse(text);
-    const isNewVersion = data.version === '1.1';
+    const text=await file.text();
+    const data=JSON.parse(text);
+    const isNewVersion=data.version==='1.1';
     
-    if(data.type==='all-banks'&&Array.isArray(data.banks)){
-      // 全量备份导入（可能包含专题信息）
-      const bankIdMap = {}; // 旧题库ID -> 新题库ID
-      let topicsCreated = 0;
-      let banksImported = 0;
-      let banksSkipped = 0;
-      let questionsSkipped = 0;
+    // 1. 预扫描阶段：收集所有变更信息
+    const summary=await scanImportChanges(data, isNewVersion);
+    
+    // 2. 显示确认弹窗
+    pendingImportData={data, isNewVersion, summary};
+    showImportConfirmModal(summary);
+  }catch(err){
+    showToast(`导入失败：${err.message}`,'error');
+  }
+}
+
+async function scanImportChanges(data, isNewVersion){
+  const summary={
+    banks:{new:[],overwrite:[]},
+    topics:{new:[],update:[],unchanged:[]},
+    hasEmptyBankOverwrite:false // 是否有空题库覆盖
+  };
+  
+  // 收集所有题库信息
+  const bankList=[];
+  if(data.type==='all-banks'&&Array.isArray(data.banks)){
+    for(const bd of data.banks){
+      const{id,questions,relatedTopics,...bank}=bd;
+      bankList.push({bank,questions:questions||[],relatedTopics:relatedTopics||[],oldId:id});
+    }
+  }else if(data.bank){
+    const{id,questions,relatedTopics,...bank}=data.bank;
+    bankList.push({bank,questions:questions||[],relatedTopics:relatedTopics||[],oldId:id});
+  }else{
+    throw new Error('文件格式不正确');
+  }
+  
+  // 扫描题库变更
+  for(const bl of bankList){
+    const existingBank=await db.banks.where('name').equals(bl.bank.name).first();
+    if(existingBank){
+      const existingQuestions=await db.questions.where('bankId').equals(existingBank.id).toArray();
+      const incomingStems=new Set(bl.questions.map(q=>q.stem||q.content));
+      const existingStems=new Set(existingQuestions.map(q=>q.stem||q.content));
       
-      // 1. 如果是新版本，先处理专题（重名则复用已有专题）
-      if(isNewVersion && data.topics && Array.isArray(data.topics)){
-        const topicNameMap = {}; // 专题名称 -> 专题ID（可能是已有的）
-        let topicsSkipped = 0;
-        for(const topic of data.topics){
-          const existingTopic = await db.topics.where('name').equals(topic.name).first();
-          if(existingTopic){
-            topicNameMap[topic.name] = existingTopic.id;
-            topicsSkipped++;
-          } else {
-            const newTopicId = await db.topics.add({
-              name: topic.name,
-              createdAt: Date.now(),
-              updatedAt: Date.now()
-            });
-            topicNameMap[topic.name] = newTopicId;
-            topicsCreated++;
-          }
-        }
-        
-        // 2. 导入题库
-        for(const bd of data.banks){
-          const{id,questions,relatedTopics,...bank}=bd;
-          
-          // 检测题库是否已存在（按名称）
-          const existingBank = await db.banks.where('name').equals(bank.name).first();
-          if(existingBank){
-            banksSkipped++;
-            // 题库已存在，逐题检查并同步笔记
-            let notesSynced=0;
-            for(const q of questions || []){
-              const existingQ = await db.questions.where({bankId: existingBank.id, stem: q.stem}).first();
-              if(existingQ){
-                questionsSkipped++;
-                if(await syncNotesToExisting(existingQ,q)) notesSynced++;
-                continue;
-              }
-              await db.questions.add({
-                ...q,
-                id: undefined,
-                bankId: existingBank.id,
-                options: JSON.stringify(q.options || []),
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-              });
-            }
-            await refreshBankStats(existingBank.id);
-            if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
-            // 补充专题关联（如果专题是新创建的）
-            for(const rt of relatedTopics || []){
-              if(topicNameMap[rt.name]){
-                const existingLink = await db.topicBanks.where({topicId: topicNameMap[rt.name], bankId: existingBank.id}).first();
-                if(!existingLink){
-                  await db.topicBanks.add({
-                    topicId: topicNameMap[rt.name],
-                    bankId: existingBank.id
-                  });
-                }
-              }
-            }
-            continue;
-          }
-          
-          const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
-          bankIdMap[id] = newId;
-          
-          // 导入题目，检测重复
-          const recs=[];
-          let notesSynced=0;
-          for(const q of questions || []){
-            const existingQ = await db.questions.where({bankId: newId, stem: q.stem}).first();
-            if(existingQ){
-              questionsSkipped++;
-              if(await syncNotesToExisting(existingQ,q)) notesSynced++;
-              continue;
-            }
-            recs.push({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()});
-          }
-          if(recs.length > 0){
-            await db.questions.bulkAdd(recs);
-          }
-          await refreshBankStats(newId);
-          banksImported++;
-          if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
-          
-          // 3. 重建专题关联（按名称查找新专题ID）
-          if(relatedTopics && Array.isArray(relatedTopics)){
-            for(const rt of relatedTopics){
-              if(topicNameMap[rt.name]){
-                await db.topicBanks.add({
-                  topicId: topicNameMap[rt.name],
-                  bankId: newId
-                });
-              }
-            }
-          }
-        }
-      } else {
-        // 旧版本格式，无专题信息，只导入题库
-        for(const bd of data.banks){
-          const{id,questions,...bank}=bd;
-
-          // 检测题库是否已存在
-          const existingBank = await db.banks.where('name').equals(bank.name).first();
-          if(existingBank){
-            banksSkipped++;
-            // 题库已存在，逐题检查并同步笔记
-            let notesSynced=0;
-            for(const q of questions || []){
-              const existingQ = await db.questions.where({bankId: existingBank.id, stem: q.stem}).first();
-              if(existingQ){
-                questionsSkipped++;
-                if(await syncNotesToExisting(existingQ,q)) notesSynced++;
-                continue;
-              }
-              await db.questions.add({
-                ...q,
-                id: undefined,
-                bankId: existingBank.id,
-                options: JSON.stringify(q.options || []),
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-              });
-            }
-            await refreshBankStats(existingBank.id);
-            if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
-            continue;
-          }
-
-          const newId=await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
-
-          // 导入题目，检测重复
-          const recs=[];
-          let notesSynced=0;
-          for(const q of questions || []){
-            const existingQ = await db.questions.where({bankId: newId, stem: q.stem}).first();
-            if(existingQ){
-              questionsSkipped++;
-              if(await syncNotesToExisting(existingQ,q)) notesSynced++;
-              continue;
-            }
-            recs.push({...q,id:undefined,bankId:newId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()});
-          }
-          if(recs.length > 0){
-            await db.questions.bulkAdd(recs);
-          }
-          await refreshBankStats(newId);
-          banksImported++;
-          if(notesSynced>0) showToast(`${bank.name}: 已同步 ${notesSynced} 条笔记`,'info');
-        }
+      let addedCount=0;
+      let removedCount=0;
+      let keptCount=0;
+      for(const q of bl.questions){
+        if(existingStems.has(q.stem||q.content))keptCount++;else addedCount++;
+      }
+      for(const q of existingQuestions){
+        if(!incomingStems.has(q.stem||q.content))removedCount++;
       }
       
-      let msg = '';
-      if(banksSkipped > 0 || questionsSkipped > 0){
-        msg = `导入完成：新增 ${banksImported} 个题库，${banksSkipped} 个已跳过；新增 ${questionsSkipped === 0 ? '' : questionsSkipped + ' 道题目已跳过'}`;
-      } else {
-        msg = topicsCreated > 0 
-          ? `成功导入 ${banksImported} 个题库和 ${topicsCreated} 个专题`
-          : `成功导入 ${banksImported} 个题库`;
+      const overwriteInfo={
+        name:bl.bank.name,
+        existingBankId:existingBank.id,
+        existingCount:existingQuestions.length,
+        incomingCount:bl.questions.length,
+        addedCount,
+        removedCount,
+        keptCount
+      };
+      summary.banks.overwrite.push(overwriteInfo);
+      
+      // 标记空题库覆盖
+      if(bl.questions.length===0&&existingQuestions.length>0){
+        summary.hasEmptyBankOverwrite=true;
       }
-      showToast(msg, banksSkipped > 0 ? 'info' : 'success');
-      
-    }else if(data.bank){
-      // 单个题库导出（可能包含专题信息）
-      const{id,questions,relatedTopics,...bank}=data.bank;
-      
-      // 检测题库是否已存在
-      const existingBank = await db.banks.where('name').equals(bank.name).first();
-      let targetBankId;
-      let questionsSkipped = 0;
-      
-      if(existingBank){
-        // 题库已存在，只追加不重复的题目
-        targetBankId = existingBank.id;
-        let notesSynced=0;
+    }else{
+      summary.banks.new.push({
+        name:bl.bank.name,
+        questionCount:bl.questions.length
+      });
+    }
+  }
+  
+  // 扫描专题变更
+  if(isNewVersion){
+    // 收集文件中所有专题
+    const fileTopics=[];
+    for(const bl of bankList){
+      for(const rt of bl.relatedTopics){
+        if(!fileTopics.find(t=>t.name===rt.name)){
+          fileTopics.push(rt);
+        }
+      }
+    }
+    // 全量备份中可能也有专题列表
+    if(data.type==='all-banks'&&Array.isArray(data.topics)){
+      for(const topic of data.topics){
+        if(!fileTopics.find(t=>t.name===topic.name)){
+          fileTopics.push(topic);
+        }
+      }
+    }
+    
+    for(const ft of fileTopics){
+      const existingTopic=await db.topics.where('name').equals(ft.name).first();
+      if(existingTopic){
+        // 获取本地专题关联的题库
+        const localLinks=await db.topicBanks.where('topicId').equals(existingTopic.id).toArray();
+        const localBankIds=new Set(localLinks.map(l=>l.bankId));
+        const localBankNames=[];
+        for(const bid of localBankIds){
+          const b=await db.banks.get(bid);
+          if(b)localBankNames.push(b.name);
+        }
         
-        for(const q of questions || []){
-          const existingQ = await db.questions.where({bankId: targetBankId, content: q.content}).first();
-          if(existingQ){
-            questionsSkipped++;
-            if(await syncNotesToExisting(existingQ,q)) notesSynced++;
-            continue;
-          }
-          await db.questions.add({
-            ...q,
-            id: undefined,
-            bankId: targetBankId,
-            options: JSON.stringify(q.options || []),
-            createdAt: Date.now(),
-            updatedAt: Date.now()
+        // 获取文件中该专题关联的题库名
+        const fileBankNames=bankList.filter(bl=>bl.relatedTopics.some(rt=>rt.name===ft.name)).map(bl=>bl.bank.name);
+        
+        const addedBanks=fileBankNames.filter(n=>!localBankNames.includes(n));
+        const removedBanks=localBankNames.filter(n=>!fileBankNames.includes(n));
+        const keptBanks=fileBankNames.filter(n=>localBankNames.includes(n));
+        
+        if(addedBanks.length>0||removedBanks.length>0){
+          summary.topics.update.push({
+            name:ft.name,
+            topicId:existingTopic.id,
+            addedBanks,
+            removedBanks,
+            keptBanks
           });
+        }else{
+          summary.topics.unchanged.push({name:ft.name});
         }
-        await refreshBankStats(targetBankId);
-        if(notesSynced>0) showToast(`已同步 ${notesSynced} 条笔记到已有题目`,'info');
-      } else {
-        // 题库不存在，创建新题库并导入所有题目
-        targetBankId = await db.banks.add({...bank,createdAt:Date.now(),updatedAt:Date.now()});
-        const recs=(questions||[]).map(q=>({...q,id:undefined,bankId:targetBankId,options:JSON.stringify(q.options||[]),createdAt:Date.now(),updatedAt:Date.now()}));
-        await db.questions.bulkAdd(recs);
-        await refreshBankStats(targetBankId);
+      }else{
+        // 获取该专题在文件中关联的题库名
+        const fileBankNames=bankList.filter(bl=>bl.relatedTopics.some(rt=>rt.name===ft.name)).map(bl=>bl.bank.name);
+        summary.topics.new.push({
+          name:ft.name,
+          bankNames:fileBankNames
+        });
+      }
+    }
+  }
+  
+  return summary;
+}
+
+function showImportConfirmModal(summary){
+  let html='<div class="space-y-4">';
+  
+  // 题库变更
+  if(summary.banks.new.length>0||summary.banks.overwrite.length>0){
+    html+='<div>';
+    html+='<h4 class="font-semibold text-gray-800 mb-2">📚 题库变更</h4>';
+    for(const b of summary.banks.new){
+      html+=`<div class="flex items-center gap-2 text-sm mb-1 ml-2"><span class="text-green-500">✅ 新建：</span><span>${escapeHtml(b.name)}（${b.questionCount}题）</span></div>`;
+    }
+    for(const b of summary.banks.overwrite){
+      html+=`<div class="text-sm mb-2 ml-2">`;
+      html+=`<div class="flex items-center gap-2"><span class="text-blue-500">🔄 覆盖：</span><span>${escapeHtml(b.name)}</span></div>`;
+      html+=`<div class="text-gray-500 ml-6 text-xs">本地${b.existingCount}题 → 导入${b.incomingCount}题</div>`;
+      html+=`<div class="text-gray-500 ml-6 text-xs">新增${b.addedCount}题 | 移除${b.removedCount}题${b.removedCount>0?'（→回收站）':''} | 保留${b.keptCount}题</div>`;
+      if(b.incomingCount===0&&b.existingCount>0){
+        html+=`<div class="text-red-500 ml-6 text-xs font-medium">⚠️ 导入文件中该题库无题目！</div>`;
+      }
+      html+=`</div>`;
+    }
+    html+='</div>';
+  }
+  
+  // 专题变更
+  if(summary.topics.new.length>0||summary.topics.update.length>0||summary.topics.unchanged.length>0){
+    html+='<div>';
+    html+='<h4 class="font-semibold text-gray-800 mb-2">🏷️ 专题变更</h4>';
+    for(const t of summary.topics.new){
+      html+=`<div class="flex items-center gap-2 text-sm mb-1 ml-2"><span class="text-green-500">✅ 新建：</span><span>${escapeHtml(t.name)}（含${t.bankNames.length}个题库）</span></div>`;
+    }
+    for(const t of summary.topics.update){
+      html+=`<div class="text-sm mb-2 ml-2">`;
+      html+=`<div class="flex items-center gap-2"><span class="text-blue-500">🔄 更新：</span><span>${escapeHtml(t.name)}</span></div>`;
+      if(t.addedBanks.length>0)html+=`<div class="text-green-600 ml-6 text-xs">+新增题库：${t.addedBanks.map(n=>escapeHtml(n)).join('、')}</div>`;
+      if(t.removedBanks.length>0)html+=`<div class="text-red-500 ml-6 text-xs">-移除题库：${t.removedBanks.map(n=>escapeHtml(n)).join('、')}</div>`;
+      if(t.keptBanks.length>0)html+=`<div class="text-gray-500 ml-6 text-xs">=保持题库：${t.keptBanks.map(n=>escapeHtml(n)).join('、')}</div>`;
+      html+=`</div>`;
+    }
+    for(const t of summary.topics.unchanged){
+      html+=`<div class="flex items-center gap-2 text-sm mb-1 ml-2"><span class="text-gray-400">⏸️ 无变化：</span><span class="text-gray-500">${escapeHtml(t.name)}</span></div>`;
+    }
+    html+='</div>';
+  }
+  
+  // 回收站提示
+  const totalRemoved=summary.banks.overwrite.reduce((s,b)=>s+b.removedCount,0);
+  if(totalRemoved>0){
+    html+=`<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">⚠️ 被覆盖移除的 ${totalRemoved} 道题目将放入回收站，可随时恢复</div>`;
+  }
+  
+  html+='</div>';
+  
+  document.getElementById('import-confirm-content').innerHTML=html;
+  document.getElementById('import-confirm-modal').classList.remove('hidden');
+  document.getElementById('import-confirm-modal').classList.add('flex');
+}
+
+function cancelImport(){
+  pendingImportData=null;
+  document.getElementById('import-confirm-modal').classList.add('hidden');
+  document.getElementById('import-confirm-modal').classList.remove('flex');
+}
+
+async function confirmImport(){
+  if(!pendingImportData)return;
+  const{data, isNewVersion, summary}=pendingImportData;
+  
+  // 检查是否有空题库覆盖，需要二次确认
+  if(summary.hasEmptyBankOverwrite){
+    // 先关闭导入确认弹窗
+    document.getElementById('import-confirm-modal').classList.add('hidden');
+    document.getElementById('import-confirm-modal').classList.remove('flex');
+    // 显示空题库确认弹窗
+    const emptyBanks=summary.banks.overwrite.filter(b=>b.incomingCount===0&&b.existingCount>0);
+    const names=emptyBanks.map(b=>b.name).join('、');
+    document.getElementById('empty-bank-confirm-text').textContent=`以下题库在导入文件中无题目：${names}。本地题目将全部移入回收站。`;
+    document.getElementById('empty-bank-confirm-modal').classList.remove('hidden');
+    document.getElementById('empty-bank-confirm-modal').classList.add('flex');
+    return;
+  }
+  
+  // 直接执行导入
+  await executeImport();
+}
+
+async function confirmEmptyBankOverwrite(){
+  document.getElementById('empty-bank-confirm-modal').classList.add('hidden');
+  document.getElementById('empty-bank-confirm-modal').classList.remove('flex');
+  await executeImport();
+}
+
+function cancelEmptyBankConfirm(){
+  document.getElementById('empty-bank-confirm-modal').classList.add('hidden');
+  document.getElementById('empty-bank-confirm-modal').classList.remove('flex');
+  pendingImportData=null;
+}
+
+async function executeImport(){
+  if(!pendingImportData)return;
+  const{data, isNewVersion, summary}=pendingImportData;
+  pendingImportData=null;
+  
+  const result={
+    banksCreated:0,
+    banksOverwritten:0,
+    questionsAdded:0,
+    questionsUpdated:0,
+    questionsRemovedToRecycle:0,
+    topicsCreated:0,
+    topicsUpdated:0,
+    notesPreserved:0
+  };
+  
+  try{
+    // 收集所有题库数据
+    const bankList=[];
+    if(data.type==='all-banks'&&Array.isArray(data.banks)){
+      for(const bd of data.banks){
+        const{id,questions,relatedTopics,...bank}=bd;
+        bankList.push({bank,questions:questions||[],relatedTopics:relatedTopics||[],oldId:id});
+      }
+    }else if(data.bank){
+      const{id,questions,relatedTopics,...bank}=data.bank;
+      bankList.push({bank,questions:questions||[],relatedTopics:relatedTopics||[],oldId:id});
+    }else{
+      throw new Error('文件格式不正确');
+    }
+    
+    // 1. 处理专题（如果是新版本）
+    const topicNameMap={}; // 专题名称 -> 专题ID
+    if(isNewVersion){
+      // 收集文件中所有专题
+      const fileTopics=[];
+      for(const bl of bankList){
+        for(const rt of bl.relatedTopics){
+          if(!fileTopics.find(t=>t.name===rt.name)){
+            fileTopics.push(rt);
+          }
+        }
+      }
+      if(data.type==='all-banks'&&Array.isArray(data.topics)){
+        for(const topic of data.topics){
+          if(!fileTopics.find(t=>t.name===topic.name)){
+            fileTopics.push(topic);
+          }
+        }
       }
       
-      // 如果包含专题信息，尝试匹配或创建专题并关联
-      if(isNewVersion && relatedTopics && Array.isArray(relatedTopics) && relatedTopics.length > 0){
-        for(const rt of relatedTopics){
-          // 查找是否已存在同名专题
-          const existingTopic = await db.topics.where('name').equals(rt.name).first();
-          let targetTopicId;
-          
-          if(existingTopic){
-            targetTopicId = existingTopic.id;
-          } else {
-            // 创建新专题
-            targetTopicId = await db.topics.add({
-              name: rt.name,
-              createdAt: Date.now(),
-              updatedAt: Date.now()
-            });
-          }
-          
-          // 建立关联（检查是否已存在）
-          const existingLink = await db.topicBanks.where({topicId: targetTopicId, bankId: targetBankId}).first();
-          if(!existingLink){
-            await db.topicBanks.add({
-              topicId: targetTopicId,
-              bankId: targetBankId
-            });
-          }
+      for(const ft of fileTopics){
+        const existingTopic=await db.topics.where('name').equals(ft.name).first();
+        if(existingTopic){
+          topicNameMap[ft.name]=existingTopic.id;
+        }else{
+          const newId=await db.topics.add({name:ft.name,createdAt:Date.now(),updatedAt:Date.now()});
+          topicNameMap[ft.name]=newId;
+          result.topicsCreated++;
         }
       }
+    }
+    
+    // 2. 处理题库
+    for(const bl of bankList){
+      const existingBank=await db.banks.where('name').equals(bl.bank.name).first();
       
       if(existingBank){
-        if(questionsSkipped > 0){
-          showToast(`题库《${bank.name}》已存在，追加了 ${(questions || []).length - questionsSkipped} 道新题，${questionsSkipped} 道重复跳过`, 'info');
-        } else {
-          showToast(`题库《${bank.name}》已存在，已追加 ${(questions || []).length} 道新题`, 'info');
+        // 同名题库 → 覆盖模式
+        result.banksOverwritten++;
+        const existingQuestions=await db.questions.where('bankId').equals(existingBank.id).toArray();
+        
+        // 按 stem 匹配
+        const incomingMap=new Map();
+        for(const q of bl.questions){
+          const key=q.stem||q.content;
+          incomingMap.set(key,q);
         }
-      } else {
-        showToast(`成功导入题库《${bank.name}》共 ${(questions || []).length} 题${relatedTopics && relatedTopics.length > 0 ? `，关联 ${relatedTopics.length} 个专题` : ''}`, 'success');
+        
+        const toRemove=[]; // 本地有但导入文件没有 → 回收站
+        const toUpdate=[]; // 两边都有 → 更新内容但保留笔记
+        const toAdd=[];     // 导入文件有但本地没有 → 新增
+        
+        for(const eq of existingQuestions){
+          const key=eq.stem||eq.content;
+          if(incomingMap.has(key)){
+            toUpdate.push({existing:eq,incoming:incomingMap.get(key)});
+          }else{
+            toRemove.push(eq);
+          }
+        }
+        
+        for(const q of bl.questions){
+          const key=q.stem||q.content;
+          const existingMatch=existingQuestions.find(eq=>(eq.stem||eq.content)===key);
+          if(!existingMatch){
+            toAdd.push(q);
+          }
+        }
+        
+        // 移入回收站
+        if(toRemove.length>0){
+          await moveToRecycleBin(toRemove, existingBank.id, existingBank.name, 'import-overwrite');
+          await db.questions.bulkDelete(toRemove.map(q=>q.id));
+          result.questionsRemovedToRecycle+=toRemove.length;
+        }
+        
+        // 更新已有题目（保留本地笔记）
+        for(const{existing:ex,incoming:inc} of toUpdate){
+          const noteFields=['wrongNote','wrongNoteAt','aiReply','aiReplyAt','wrongCount','totalWrongCount','isFavorite'];
+          const updates={};
+          // 更新导入文件的字段（除笔记等本地字段外）
+          for(const[key,val] of Object.entries(inc)){
+            if(key==='id'||key==='bankId'||key==='createdAt')continue;
+            if(noteFields.includes(key))continue; // 保留本地笔记
+            updates[key]=val;
+          }
+          updates.updatedAt=Date.now();
+          // 选项序列化
+          if(updates.options&&typeof updates.options!=='string'){
+            updates.options=JSON.stringify(updates.options);
+          }
+          // 同步导入文件中的笔记（如果有）
+          if(await syncNotesToExisting(ex,inc))result.notesPreserved++;
+          // 同步错题次数：totalWrongCount 不应小于 wrongCount
+          const localWC=ex.wrongCount||0;
+          const localTWC=ex.totalWrongCount||0;
+          if(localWC>localTWC){
+            updates.totalWrongCount=localWC;
+          }
+          await db.questions.update(ex.id,updates);
+          result.questionsUpdated++;
+        }
+        
+        // 新增题目
+        if(toAdd.length>0){
+          const recs=toAdd.map(q=>{
+            // 同步错题次数：totalWrongCount 不应小于 wrongCount
+            const wc=q.wrongCount||0;
+            const twc=q.totalWrongCount||0;
+            if(wc>twc) q.totalWrongCount=wc;
+            return{
+            ...q,
+            id:undefined,
+            bankId:existingBank.id,
+            options:typeof q.options==='string'?q.options:JSON.stringify(q.options||[]),
+            createdAt:Date.now(),
+            updatedAt:Date.now()
+          };});
+          await db.questions.bulkAdd(recs);
+          result.questionsAdded+=toAdd.length;
+        }
+        
+        await refreshBankStats(existingBank.id);
+        
+      }else{
+        // 新题库 → 直接创建
+        const newId=await db.banks.add({...bl.bank,createdAt:Date.now(),updatedAt:Date.now()});
+        
+        if(bl.questions.length>0){
+          const recs=bl.questions.map(q=>{
+            // 同步错题次数：totalWrongCount 不应小于 wrongCount
+            const wc=q.wrongCount||0;
+            const twc=q.totalWrongCount||0;
+            if(wc>twc) q.totalWrongCount=wc;
+            return{
+            ...q,
+            id:undefined,
+            bankId:newId,
+            options:typeof q.options==='string'?q.options:JSON.stringify(q.options||[]),
+            createdAt:Date.now(),
+            updatedAt:Date.now()
+          };});
+          await db.questions.bulkAdd(recs);
+        }
+        
+        await refreshBankStats(newId);
+        result.banksCreated++;
+        result.questionsAdded+=bl.questions.length;
       }
-    }else{throw new Error('文件格式不正确');}
+    }
+    
+    // 3. 处理专题关联（覆盖模式）
+    if(isNewVersion){
+      // 收集文件中每个专题关联的题库名
+      const topicBankMap={}; // 专题名 -> 题库名列表
+      for(const bl of bankList){
+        for(const rt of bl.relatedTopics){
+          if(!topicBankMap[rt.name])topicBankMap[rt.name]=[];
+          topicBankMap[rt.name].push(bl.bank.name);
+        }
+      }
+      
+      for(const[tName,bNames] of Object.entries(topicBankMap)){
+        const topicId=topicNameMap[tName];
+        if(!topicId)continue;
+        
+        // 获取文件中这些题库对应的本地ID
+        const bankIds=[];
+        for(const bn of bNames){
+          const b=await db.banks.where('name').equals(bn).first();
+          if(b)bankIds.push(b.id);
+        }
+        
+        // 删除该专题现有的所有关联
+        await db.topicBanks.where('topicId').equals(topicId).delete();
+        
+        // 重新建立关联
+        for(const bid of bankIds){
+          await db.topicBanks.add({topicId,bankId:bid});
+        }
+        
+        await db.topics.update(topicId,{updatedAt:Date.now()});
+        
+        // 判断是否是更新
+        const topicSummary=summary.topics.update.find(t=>t.name===tName);
+        if(topicSummary)result.topicsUpdated++;
+      }
+    }
+    
+    // 4. 显示结果弹窗
+    let html='<div class="space-y-3">';
+    html+=`<div class="flex items-center gap-2 text-sm">📚 题库：新建 <strong>${result.banksCreated}</strong> 个，覆盖 <strong>${result.banksOverwritten}</strong> 个</div>`;
+    html+=`<div class="flex items-center gap-2 text-sm">📝 题目：新增 <strong>${result.questionsAdded}</strong> 道，更新 <strong>${result.questionsUpdated}</strong> 道</div>`;
+    if(result.questionsRemovedToRecycle>0){
+      html+=`<div class="flex items-center gap-2 text-sm">🗑️ 移入回收站：<strong class="text-red-500">${result.questionsRemovedToRecycle}</strong> 道（可恢复）</div>`;
+    }
+    if(result.topicsCreated>0||result.topicsUpdated>0){
+      html+=`<div class="flex items-center gap-2 text-sm">🏷️ 专题：新建 <strong>${result.topicsCreated}</strong> 个，更新 <strong>${result.topicsUpdated}</strong> 个</div>`;
+    }
+    if(result.notesPreserved>0){
+      html+=`<div class="flex items-center gap-2 text-sm">📔 笔记同步：<strong>${result.notesPreserved}</strong> 条</div>`;
+    }
+    html+='</div>';
+    
+    document.getElementById('import-result-content').innerHTML=html;
+    document.getElementById('import-result-modal').classList.remove('hidden');
+    document.getElementById('import-result-modal').classList.add('flex');
+    
     if(state.currentTab==='bank')loadBanks();
-  }catch(err){showToast(`导入失败：${err.message}`,'error');}
+    updateRecycleBinBadge();
+    
+  }catch(err){
+    showToast(`导入失败：${err.message}`,'error');
+  }
 }
 
 function showImportModal(){document.getElementById('import-modal').classList.remove('hidden');document.getElementById('import-modal').classList.add('flex');}
@@ -4883,16 +5393,29 @@ function recordAnswer(qid,isCorrect){
 async function recordWrongAnswer(q) {
   try {
     const currentCount = q.wrongCount || 0;
+    // 确保题目在错题本中
+    await ensureInWrongBook(q.id);
+    // 如果之前已掌握，重新做错则恢复到错题复习
+    const entry = await db.wrongBook.where('questionId').equals(q.id).first();
+    if (entry && entry.removed) {
+      await db.wrongBook.update(entry.id, { removed: false });
+    }
     await db.questions.update(q.id, {
       wrongCount: currentCount + 1,
+      totalWrongCount: (q.totalWrongCount || 0) + 1,
       lastWrongAt: Date.now()
     });
     // 更新本地缓存
     q.wrongCount = currentCount + 1;
+    q.totalWrongCount = (q.totalWrongCount || 0) + 1;
     q.lastWrongAt = Date.now();
     
     // 刷新错题计数
     updateWrongBadge();
+    // 如果该题首次加入错题记录，刷新记录徽章
+    if (currentCount === 0) {
+      updateWrongRecordBadge();
+    }
   } catch (err) {
     console.error('记录错题失败', err);
   }
@@ -4901,9 +5424,18 @@ async function recordWrongAnswer(q) {
 // 清除错题记录（答对时调用）
 async function clearWrongRecord(qid) {
   try {
+    // 如果题目已在错题本中，同步笔记（但不新增错题本记录）
+    const entry = await db.wrongBook.where('questionId').equals(qid).first();
+    if (entry) {
+      await syncNoteToWrongBook(qid);
+      // 答对后标记为已掌握，从"错题复习"中移除，但保留在"错题记录"中
+      await db.wrongBook.update(entry.id, { removed: true });
+    }
+    // 清除复习状态，但保留笔记在题目表中
     await db.questions.update(qid, {
       wrongCount: 0,
       lastWrongAt: null
+      // 注意：不删除 wrongNote 和 aiReply，永久保留
     });
     updateWrongBadge();
   } catch (err) {
@@ -4911,20 +5443,625 @@ async function clearWrongRecord(qid) {
   }
 }
 
-// 更新错题徽章
+// ========== 错题本功能 ==========
+
+// 确保题目在错题本中
+async function ensureInWrongBook(qid) {
+  const existing = await db.wrongBook.where('questionId').equals(qid).first();
+  if (!existing) {
+    const q = await db.questions.get(qid);
+    if (q) {
+      await db.wrongBook.add({
+        questionId: qid,
+        bankId: q.bankId,
+        addedAt: Date.now(),
+        removed: false
+      });
+    }
+  }
+}
+
+// 同步笔记到错题本
+async function syncNoteToWrongBook(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) return;
+  
+  let entry = await db.wrongBook.where('questionId').equals(qid).first();
+  // 如果错题本中还没有，先添加
+  if (!entry) {
+    await db.wrongBook.add({
+      questionId: qid,
+      bankId: q.bankId,
+      addedAt: q.lastWrongAt || Date.now(),
+      removed: false,
+      wrongNote: q.wrongNote || null,
+      wrongNoteAt: q.wrongNoteAt || null,
+      aiReply: q.aiReply || null,
+      aiReplyAt: q.aiReplyAt || null
+    });
+  } else {
+    // 更新已有条目
+    await db.wrongBook.update(entry.id, {
+      wrongNote: q.wrongNote || null,
+      wrongNoteAt: q.wrongNoteAt || null,
+      aiReply: q.aiReply || null,
+      aiReplyAt: q.aiReplyAt || null
+    });
+  }
+}
+
+// 同步所有已有错题到错题本（应用启动时调用）
+async function syncExistingWrongQuestions() {
+  try {
+    // 获取所有有错题记录的题目（wrongCount > 0）
+    const allWrongQuestions = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0).toArray();
+    console.log('[错题本同步] 找到有错题记录的题目:', allWrongQuestions.length);
+    
+    let synced = 0;
+    for (const q of allWrongQuestions) {
+      // 检查是否已存在于错题本
+      const existing = await db.wrongBook.where('questionId').equals(q.id).first();
+      if (!existing) {
+        // 添加到错题本
+        await db.wrongBook.add({
+          questionId: q.id,
+          bankId: q.bankId,
+          addedAt: q.lastWrongAt || Date.now(),
+          removed: false,
+          wrongNote: q.wrongNote || null,
+          wrongNoteAt: q.wrongNoteAt || null,
+          aiReply: q.aiReply || null,
+          aiReplyAt: q.aiReplyAt || null
+        });
+        synced++;
+        console.log('[错题本同步] 添加题目:', q.id, q.stem?.substring(0, 30));
+      }
+    }
+    
+    if (allWrongQuestions.length > 0) {
+      console.log(`[错题本同步] 完成！共 ${allWrongQuestions.length} 道错题，添加了 ${synced} 道新记录`);
+    }
+  } catch (err) {
+    console.error('[错题本同步] 失败', err);
+  }
+}
+
+// 添加题目到错题本
+async function addToWrongBookManual(qid) {
+  await ensureInWrongBook(qid);
+  showToast('已加入错题本', 'success');
+}
+
+// 手动同步错题本（诊断用）
+async function manualSyncWrongBook() {
+  const statusEl = document.getElementById('sync-status');
+  if (statusEl) statusEl.textContent = '正在同步...';
+  
+  try {
+    // 手动调用同步函数
+    await syncExistingWrongQuestions();
+    
+    // 重新加载当前标签页
+    if (currentWrongBookTab === 'review') {
+      await loadWrongBookReview();
+    } else {
+      await loadWrongBookRecord();
+    }
+    
+    // 获取同步后的数量
+    const entries = await getWrongBookReview();
+    
+    if (statusEl) statusEl.textContent = `同步完成！共 ${entries.length} 条错题记录`;
+    showToast(`同步完成，共 ${entries.length} 条错题`, 'success');
+  } catch (err) {
+    console.error('手动同步失败', err);
+    if (statusEl) statusEl.textContent = '同步失败：' + err.message;
+    showToast('同步失败：' + err.message, 'error');
+  }
+}
+
+// 从错题复习中移除（标记为已掌握，保留在错题记录中）
+async function removeFromWrongBook(wbId) {
+  if (!confirm('确定要将此题从错题复习中移除吗？\n\n将标记为"已掌握"，题目仍保存在"错题记录"中，笔记也会保留。')) return;
+  await db.wrongBook.update(wbId, { removed: true });
+  showToast('已从错题复习中移除，已标记"已掌握"', 'info');
+  // 刷新当前界面（模态框或页面子标签）
+  const modal = document.getElementById('wrong-book-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    if (currentWrongBookTab === 'review') {
+      loadWrongBookReview();
+    } else {
+      loadWrongBookRecord();
+    }
+  } else {
+    // 页面子标签模式
+    loadWrongBookReviewPage();
+    updateWrongCountBadge();
+  }
+}
+
+// 从错题记录中删除（永久删除记录，但保留题目表中的笔记）
+async function removeFromWrongBookRecord(wbId) {
+  if (!confirm('确定要永久删除此题的错题记录吗？\n\n笔记将保留在题目表中，除非删除题目本身，否则笔记不会被删除。\n\n此操作不可恢复！')) return;
+  await db.wrongBook.delete(wbId);
+  showToast('已永久删除错题记录', 'info');
+  // 刷新当前界面（模态框或页面子标签）
+  const modal = document.getElementById('wrong-book-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    loadWrongBookRecord();
+  } else {
+    loadWrongBookRecordPage();
+  }
+}
+
+// 导出所有错题笔记
+async function exportAllWrongNotes() {
+  try {
+    const entries = await getWrongBookRecord();
+    if (entries.length === 0) {
+      showToast('没有可导出的笔记', 'warning');
+      return;
+    }
+    
+    let hasNotes = false;
+    let content = '# 错题笔记导出\n\n';
+    content += `导出时间：${new Date().toLocaleString('zh-CN')}\n\n`;
+    content += '---\n\n';
+    
+    for (const entry of entries) {
+      const q = await db.questions.get(entry.questionId);
+      if (!q) continue;
+      
+      const bank = await db.banks.get(q.bankId);
+      const note = q.wrongNote || entry.wrongNote || '';
+      const aiReply = q.aiReply || entry.aiReply || '';
+      
+      if (!note && !aiReply) continue;
+      
+      hasNotes = true;
+      content += `## ${escapeHtml(q.stem || '无题干')}\n\n`;
+      content += `**题库**：${escapeHtml(bank?.name || '未知')}\n\n`;
+      content += `**类型**：${q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题'}\n\n`;
+      
+      if (q.type === 'choice' && q.options) {
+        try {
+          const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+          content += '**选项**：\n';
+          options.forEach((opt, idx) => {
+            content += `${String.fromCharCode(65 + idx)}. ${escapeHtml(typeof opt === 'object' ? (opt.content || JSON.stringify(opt)) : opt)}\n`;
+          });
+          content += '\n';
+        } catch (e) {}
+      }
+      
+      content += `**正确答案**：${escapeHtml(q.answer || '')}\n\n`;
+      
+      if (note) {
+        content += `### 📔 自定义笔记\n\n`;
+        content += `${note}\n\n`;
+        if (q.wrongNoteAt) {
+          content += `*笔记时间：${new Date(q.wrongNoteAt).toLocaleString('zh-CN')}*\n\n`;
+        }
+      }
+      
+      if (aiReply) {
+        content += `### 🤖 AI答疑\n\n`;
+        content += `${aiReply}\n\n`;
+        if (q.aiReplyAt || entry.aiReplyAt) {
+          content += `*答疑时间：${new Date(q.aiReplyAt || entry.aiReplyAt).toLocaleString('zh-CN')}*\n\n`;
+        }
+      }
+      
+      content += '---\n\n';
+    }
+    
+    if (!hasNotes) {
+      showToast('没有可导出的笔记', 'warning');
+      return;
+    }
+    
+    // 下载文件
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `错题笔记_${new Date().toISOString().slice(0,10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('笔记导出成功', 'success');
+  } catch (err) {
+    console.error('导出笔记失败', err);
+    showToast('导出失败：' + err.message, 'error');
+  }
+}
+
+// 获取错题本列表（错题复习：需要复习的题）
+async function getWrongBookReview() {
+  // 使用 filter 兼容布尔值 false 和数字 0
+  return await db.wrongBook.filter(e => !e.removed || e.removed === 0).toArray();
+}
+
+// 获取所有错题记录（错题记录：所有曾经做错过的题）
+async function getWrongBookRecord() {
+  return await db.wrongBook.toArray();
+}
+
+// 加载错题复习页面
+async function loadWrongBookReview() {
+  const content = document.getElementById('wrong-book-content');
+  if (!content) return;
+  
+  const entries = await getWrongBookReview();
+  
+  if (entries.length === 0) {
+    content.innerHTML = `
+      <div class="text-center py-16">
+        <div class="text-5xl mb-4">📚</div>
+        <p class="text-gray-500">错题本暂无记录</p>
+        <p class="text-xs text-gray-400 mt-2">做错的题目会自动加入错题本</p>
+        <button onclick="manualSyncWrongBook()" class="mt-4 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">🔄 手动同步错题</button>
+        <p id="sync-status" class="text-xs text-gray-400 mt-2"></p>
+      </div>
+    `;
+    return;
+  }
+  
+  // 获取每个条目的题目信息
+  let html = '<div class="space-y-3">';
+  for (const entry of entries) {
+    const q = await db.questions.get(entry.questionId);
+    const bank = q ? await db.banks.get(q.bankId) : null;
+    // 优先从题目表（questions）读取笔记，确保永久保存
+    const hasNote = (q && (q.wrongNote || q.aiReply)) || entry.wrongNote || entry.aiReply;
+    const addedDate = new Date(entry.addedAt).toLocaleDateString('zh-CN');
+    
+    if (q) {
+      html += `
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
+                <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
+              </div>
+              <p class="text-sm text-gray-800 line-clamp-2">${escapeHtml(q.stem || '')}</p>
+              <p class="text-xs text-gray-400 mt-2">📚 ${escapeHtml(bank?.name || '未知')}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+            <button onclick="showQuestionFromWrongBook(${entry.questionId})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看题目</button>
+            ${hasNote ? `<button onclick="showWrongNoteFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-purple-100 text-purple-700 text-xs rounded-lg hover:bg-purple-200">📔 查看笔记</button>` : ''}
+            <button onclick="removeFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">🗑️ 移除</button>
+          </div>
+        </div>
+      `;
+    } else {
+      // 题目已被删除，标记为已移除
+      html += `
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 opacity-60">
+          <p class="text-sm text-gray-500">题目已不存在</p>
+          <button onclick="removeFromWrongBook(${entry.id})" class="mt-2 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">🗑️ 清理</button>
+        </div>
+      `;
+    }
+  }
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+// 加载错题记录页面（所有曾经做错过的题）
+async function loadWrongBookRecord() {
+  const content = document.getElementById('wrong-book-content');
+  if (!content) return;
+  
+  const entries = await getWrongBookRecord();
+  
+  if (entries.length === 0) {
+    content.innerHTML = `
+      <div class="text-center py-16">
+        <div class="text-5xl mb-4">📝</div>
+        <p class="text-gray-500">错题记录暂无数据</p>
+        <p class="text-xs text-gray-400 mt-2">所有做错过的题目都会保存在这里</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // 添加"导出所有笔记"按钮
+  let html = `
+    <div class="mb-4 flex justify-between items-center">
+      <p class="text-sm text-gray-600">共 ${entries.length} 条记录</p>
+      <button onclick="exportAllWrongNotes()" class="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700">📤 导出所有笔记</button>
+    </div>
+    <div class="space-y-3">
+  `;
+  
+  for (const entry of entries) {
+    const q = await db.questions.get(entry.questionId);
+    const bank = q ? await db.banks.get(q.bankId) : null;
+    const hasNote = entry.wrongNote || entry.aiReply || (q && (q.wrongNote || q.aiReply));
+    const addedDate = new Date(entry.addedAt).toLocaleDateString('zh-CN');
+    const isRemoved = entry.removed;
+    
+    if (q) {
+      html += `
+        <div class="bg-white rounded-xl border border-gray-200 p-4 ${isRemoved ? 'opacity-60' : ''}">
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
+                ${isRemoved ? '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">已掌握</span>' : ''}
+                <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
+              </div>
+              <p class="text-sm text-gray-800 line-clamp-2">${escapeHtml(q.stem || '')}</p>
+              <p class="text-xs text-gray-400 mt-2">📚 ${escapeHtml(bank?.name || '未知')}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+            <button onclick="showQuestionFromWrongBook(${entry.questionId})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看题目</button>
+            ${hasNote ? `<button onclick="showWrongNoteFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-purple-100 text-purple-700 text-xs rounded-lg hover:bg-purple-200">📔 查看笔记</button>` : ''}
+            <button onclick="removeFromWrongBookRecord(${entry.id})" class="px-3 py-1.5 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200">🗑️ 删除记录</button>
+          </div>
+        </div>
+      `;
+    } else {
+      // 题目已被删除，标记为已移除
+      html += `
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 opacity-60">
+          <p class="text-sm text-gray-500">题目已不存在</p>
+          <button onclick="removeFromWrongBookRecord(${entry.id})" class="mt-2 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">🗑️ 清理</button>
+        </div>
+      `;
+    }
+  }
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+// ========== 错题复习/错题记录页面渲染（嵌入page-bank子页面） ==========
+
+// 加载错题复习页面（渲染到 bank-subpage-wrong-review）
+async function loadWrongBookReviewPage() {
+  const list = document.getElementById('wrong-review-list');
+  const empty = document.getElementById('wrong-review-empty');
+  if (!list || !empty) return;
+
+  const entries = await getWrongBookReview();
+
+  if (entries.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  let html = '<div class="space-y-3">';
+  for (const entry of entries) {
+    const q = await db.questions.get(entry.questionId);
+    const bank = q ? await db.banks.get(q.bankId) : null;
+    const hasNote = (q && (q.wrongNote || q.aiReply)) || entry.wrongNote || entry.aiReply;
+    const addedDate = new Date(entry.addedAt).toLocaleDateString('zh-CN');
+
+    if (q) {
+      html += `
+        <div class="bg-white rounded-xl border border-gray-200 p-4 fade-in">
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
+                <span class="text-xs text-gray-400">${escapeHtml(bank?.name || '未知')}</span>
+                <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
+              </div>
+              <p class="text-sm text-gray-800 line-clamp-2">${escapeHtml(q.stem || '')}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+            <button onclick="showQuestionFromWrongBook(${entry.questionId})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看题目</button>
+            ${hasNote ? `<button onclick="showWrongNoteFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-purple-100 text-purple-700 text-xs rounded-lg hover:bg-purple-200">📔 查看笔记</button>` : ''}
+            <button onclick="removeFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">✅ 已掌握，移除</button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 opacity-60">
+          <p class="text-sm text-gray-500">题目已不存在</p>
+          <button onclick="removeFromWrongBook(${entry.id})" class="mt-2 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">🗑️ 清理</button>
+        </div>
+      `;
+    }
+  }
+  html += '</div>';
+  list.innerHTML = html;
+  // 更新错题数量角标
+  updateWrongCountBadge();
+}
+
+// 加载错题记录页面（渲染到 bank-subpage-wrong-record）
+async function loadWrongBookRecordPage() {
+  const list = document.getElementById('wrong-record-list');
+  const empty = document.getElementById('wrong-record-empty');
+  if (!list || !empty) return;
+
+  const entries = await getWrongBookRecord();
+
+  if (entries.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  let html = `
+    <div class="mb-4 flex justify-between items-center">
+      <p class="text-sm text-gray-600">共 ${entries.length} 条记录</p>
+    </div>
+    <div class="space-y-3">
+  `;
+
+  for (const entry of entries) {
+    const q = await db.questions.get(entry.questionId);
+    const bank = q ? await db.banks.get(q.bankId) : null;
+    const hasNote = entry.wrongNote || entry.aiReply || (q && (q.wrongNote || q.aiReply));
+    const addedDate = new Date(entry.addedAt).toLocaleDateString('zh-CN');
+    const isRemoved = entry.removed;
+
+    if (q) {
+      html += `
+        <div class="bg-white rounded-xl border border-gray-200 p-4 fade-in ${isRemoved ? 'opacity-60' : ''}">
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
+                ${isRemoved ? '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">已掌握</span>' : ''}
+                <span class="text-xs text-gray-400">${escapeHtml(bank?.name || '未知')}</span>
+                <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
+              </div>
+              <p class="text-sm text-gray-800 line-clamp-2">${escapeHtml(q.stem || '')}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+            <button onclick="showQuestionFromWrongBook(${entry.questionId})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看题目</button>
+            ${hasNote ? `<button onclick="showWrongNoteFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-purple-100 text-purple-700 text-xs rounded-lg hover:bg-purple-200">📔 查看笔记</button>` : ''}
+            ${!isRemoved ? `<button onclick="removeFromWrongBook(${entry.id})" class="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">✅ 已掌握</button>` : `<button onclick="restoreToWrongReview(${entry.id})" class="px-3 py-1.5 bg-blue-100 text-blue-600 text-xs rounded-lg hover:bg-blue-200">🔄 恢复复习</button>`}
+            <button onclick="removeFromWrongBookRecord(${entry.id})" class="px-3 py-1.5 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200">🗑️ 删除记录</button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 opacity-60">
+          <p class="text-sm text-gray-500">题目已不存在</p>
+          <button onclick="removeFromWrongBookRecord(${entry.id})" class="mt-2 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">🗑️ 清理</button>
+        </div>
+      `;
+    }
+  }
+  html += '</div>';
+  list.innerHTML = html;
+}
+
+// 从错题记录恢复到错题复习
+async function restoreToWrongReview(wbId) {
+  await db.wrongBook.update(wbId, { removed: false });
+  showToast('已恢复到错题复习', 'success');
+  loadWrongBookRecordPage();
+}
+
+// 显示错题本中的题目详情
+async function showQuestionFromWrongBook(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) {
+    showToast('题目不存在，可能已被删除', 'warning');
+    return;
+  }
+  // 打开题目编辑界面（只读模式）
+  openEditQuestion(qid);
+}
+
+// 显示错题本中的笔记（从题目表读取笔记，确保永久保存）
+async function showWrongNoteFromWrongBook(wbId) {
+  const entry = await db.wrongBook.get(wbId);
+  if (!entry) return;
+  
+  const q = await db.questions.get(entry.questionId);
+  if (!q) {
+    showToast('题目不存在，可能已被删除', 'warning');
+    return;
+  }
+  
+  // 使用与 showWrongNotePanel 相同的笔记面板，从 questions 表读取笔记
+  showWrongNotePanel(q.id);
+}
+
+// 导出错题本单个笔记（从题目表读取笔记，确保永久保存）
+async function exportSingleWrongNote(wbId) {
+  const entry = await db.wrongBook.get(wbId);
+  if (!entry) return;
+  
+  const q = await db.questions.get(entry.questionId);
+  if (!q) { showToast('题目不存在', 'warning'); return; }
+  
+  const bank = await db.banks.get(q.bankId);
+  const noteContent = q.wrongNote || q.aiReply || '';
+  const isAiReply = !!q.aiReply && !q.wrongNote;
+  const now = new Date().toLocaleString('zh-CN');
+  
+  let content = `# 错题笔记\n\n`;
+  content += `**来源：** ${bank?.name || '错题本'}\n`;
+  content += `**加入时间：** ${new Date(entry.addedAt).toLocaleDateString('zh-CN')}\n`;
+  content += `**笔记类型：** ${isAiReply ? 'AI答疑' : '自定义笔记'}\n`;
+  content += `**导出时间：** ${now}\n\n---\n\n`;
+  content += `## 题目\n\n${q.stem || ''}\n\n`;
+  content += `**正确答案：** ${q.answer || ''}\n\n`;
+  if (noteContent) {
+    content += `---\n\n## 笔记\n\n${noteContent}\n`;
+  }
+  
+  downloadFile(content, `错题笔记_${Date.now()}.md`);
+  showToast('已导出笔记', 'success');
+}
+
+// 更新错题徽章（❌ 复习标签：待复习数量 based on wrongCount + isDueForReview）
 async function updateWrongBadge() {
   const badge = document.getElementById('wrong-count-badge');
   if (!badge) return;
   
+  // 从 questions 表读取待复习错题数量（wrongCount>0 且艾宾浩斯已到复习时间）
   const allWrong = await db.questions.filter(q => q.wrongCount && q.wrongCount > 0).toArray();
-  const dueCount = allWrong.filter(q => isDueForReview(q)).length;
+  const count = allWrong.filter(q => isDueForReview(q)).length;
   
-  if (dueCount > 0) {
-    badge.textContent = dueCount > 99 ? '99+' : dueCount;
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
     badge.classList.remove('hidden');
   } else {
     badge.classList.add('hidden');
   }
+}
+
+// 更新错题记录徽章（📝 记录标签：totalWrongCount>0 的题数，只增不减）
+async function updateWrongRecordBadge() {
+  const badge = document.getElementById('wrong-record-badge');
+  if (!badge) return;
+  
+  const allRecord = await db.questions.filter(q => q.totalWrongCount && q.totalWrongCount > 0).toArray();
+  const count = allRecord.length;
+  
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.remove('hidden');
+    badge.classList.add('bg-gray-400');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// 别名，兼容调用
+const updateWrongCountBadge = updateWrongBadge;
+
+// 刷新当前可见的错题页面（兼容旧调用和模态框）
+function refreshCurrentWrongPage() {
+  const modal = document.getElementById('wrong-book-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    if (currentWrongBookTab === 'review') {
+      loadWrongBookReview();
+    } else {
+      loadWrongBookRecord();
+    }
+  } else if (currentBankTab === 'wrong-review') {
+    loadWrongQuestions();
+  } else if (currentBankTab === 'wrong-record') {
+    loadWrongRecord();
+  }
+  updateWrongBadge();
+  updateWrongRecordBadge();
 }
 
 function nextQuestion(){
@@ -5234,6 +6371,37 @@ function closeModal(id){
   el.style.display = '';
 }
 
+// 切换错题本标签页
+function switchWrongBookTab(tab) {
+  currentWrongBookTab = tab;
+  
+  // 更新标签样式
+  const reviewTab = document.getElementById('wrong-book-tab-review');
+  const recordTab = document.getElementById('wrong-book-tab-record');
+  const title = document.getElementById('wrong-book-title');
+  
+  if (tab === 'review') {
+    reviewTab.className = 'px-3 py-1 text-xs rounded-md transition-all bg-white text-gray-800 shadow-sm font-medium';
+    recordTab.className = 'px-3 py-1 text-xs rounded-md transition-all text-gray-600 hover:text-gray-800';
+    title.textContent = '📚 错题复习';
+    loadWrongBookReview();
+  } else {
+    reviewTab.className = 'px-3 py-1 text-xs rounded-md transition-all text-gray-600 hover:text-gray-800';
+    recordTab.className = 'px-3 py-1 text-xs rounded-md transition-all bg-white text-gray-800 shadow-sm font-medium';
+    title.textContent = '📝 错题记录';
+    loadWrongBookRecord();
+  }
+}
+
+// 显示错题本模态框
+function showWrongBookModal() {
+  const modal = document.getElementById('wrong-book-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  // 默认显示错题复习标签页
+  switchWrongBookTab('review');
+}
+
 function copyCommand(step){
   const cmdMap = {
     'step1': navigator.userAgent.includes('Windows')
@@ -5397,7 +6565,16 @@ function getCloudGuideHTML(){
   </div>`;
 }
 
-document.addEventListener('DOMContentLoaded',()=>{loadSettings();loadBanks();});
+document.addEventListener('DOMContentLoaded',async()=>{
+  // 启动时同步已有错题到错题本
+  await syncExistingWrongQuestions();
+  loadSettings();
+  loadBanks();
+  // 启动时更新徽章
+  updateWrongBadge();
+  updateWrongRecordBadge();
+  updateRecycleBinBadge();
+});
 </script>
 </body>
 </html>
