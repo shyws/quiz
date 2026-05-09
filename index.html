@@ -5009,15 +5009,29 @@ async function regenerateQuestion(qid){
   const btn=event.target;
   btn.disabled=true;btn.textContent='⏳ 重生成中...';
   try{
-    const bank=await db.banks.get(q.bankId);
-    const content=bank?.sourceContent||'';
-    const prompt=`你是一位资深教育专家。根据以下内容，重新生成一道高质量的${q.type==='choice'?'选择题':q.type==='judge'?'判断题':'填空题'}。
+    // 构造当前题目的完整内容，传给 AI 用于纠错或生成变题
+    let currentQInfo=`题型：${q.type==='choice'?'选择题':q.type==='judge'?'判断题':'填空题'}
+难度：${q.difficulty===1?'简单':q.difficulty===3?'困难':'中等'}
+题干：${q.stem}
+${q.type==='choice'?('选项：\n'+JSON.parse(q.options||'[]').map(o=>`${o.label}. ${o.content}`).join('\n')):''}${q.type==='blank'?('填空答案示例：'+q.answer):''}
+正确答案：${q.answer}
+解析：${q.analysis||'（无解析）'}`;
 
-要求：
-- 难度：${q.difficulty===1?'简单':q.difficulty===3?'困难':'中等'}
-- 题干简洁明确，选项不能有歧义
-- ${q.type==='choice'?'必须有4个选项，只有一个正确答案':'答案唯一'}${q.type==='blank'?'\n- 题干中的空位用"____"标记，多空答案用"|"分隔，例如：{"type":"blank","stem":"根目录是____，家目录是____","answer":"/|~","analysis":"...","difficulty":2}':'请直接输出JSON格式：'}
-${q.type==='choice'?'{"type":"choice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"正确答案选项字母","analysis":"解析","difficulty":1-3}':q.type==='judge'?'{"type":"judge","stem":"题干","answer":"正确或错误","analysis":"解析","difficulty":1-3}':'{"type":"blank","stem":"题干，答案处用____表示","answer":"填空答案（多空用|分隔）","analysis":"解析","difficulty":1-3}'}`;
+    const prompt=`你是一位资深教育专家，请对以下题目进行质量检查，然后重新生成一道高质量题目。
+
+【当前题目】
+${currentQInfo}
+
+【处理规则】
+1. 首先检查题目是否存在以下问题：题干表述不清或有歧义、选项重复或逻辑错误（仅选择题）、答案与解析不匹配、解析有误。
+2. 如果发现问题 → 修正问题，重新生成一道正确的题目（同一知识点），并在 analysis 末尾注明"（已纠错）"。
+3. 如果题目质量良好 → 基于同一知识点，换角度或换场景生成一道变题，难度保持不变，并在 analysis 末尾注明"（已变题）"。
+
+【输出要求】
+- 难度必须与输入题目保持一致（${q.difficulty===1?'简单':q.difficulty===3?'困难':'中等'}）
+- ${q.type==='choice'?'必须有4个选项，只有一个正确答案':'答案唯一'}${q.type==='blank'?'\n- 题干中的空位用"____"标记，多空答案用"|"分隔':''}
+- 仅输出符合以下格式的 JSON，不要有任何其他文字：
+${q.type==='choice'?'{"type":"choice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"正确答案选项字母","analysis":"解析","difficulty":'+q.difficulty+'}':q.type==='judge'?'{"type":"judge","stem":"题干","answer":"正确或错误","analysis":"解析","difficulty":'+q.difficulty+'}':'{"type":"blank","stem":"题干，答案处用____表示","answer":"填空答案（多空用|分隔）","analysis":"解析","difficulty":'+q.difficulty+'}'}`;
     
     const apiKey=localStorage.getItem('deepseek_api_key');
     if(!apiKey||apiKey.startsWith('sk-••')){showToast('请先配置 DeepSeek API Key','warning');return;}
