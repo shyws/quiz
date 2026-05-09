@@ -1219,7 +1219,6 @@ async function loadWrongQuestions() {
     const stars = '⭐'.repeat(q.difficulty || 2);
     const dueText = getDueText(q);
     
-    const qJson = JSON.stringify(q).replace(/'/g, "\\'");
     const hasNote = !!(q.wrongNote || q.aiReply);
     html += `<div class="bg-white rounded-xl border ${isDue ? 'border-red-300 bg-red-50' : 'border-gray-100'} shadow-sm p-4 mb-3">
       <div class="flex items-start gap-3">
@@ -1236,7 +1235,7 @@ async function loadWrongQuestions() {
         </div>
       </div>
       <div class="flex gap-2 mt-3 flex-wrap">
-        <button onclick='showWrongQuestionInModal(${qJson})' class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看</button>
+        <button onclick="showWrongQuestionInModal(${q.id})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看</button>
         <button onclick='openEditQuestionFromWrong(${q.id})' class="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200">✏️ 编辑</button>
         <button onclick='askAIAboutWrongQuestion(${q.id})' class="px-3 py-1.5 bg-violet-100 text-violet-700 text-xs rounded-lg hover:bg-violet-200">🤖 AI答疑</button>
         <button onclick='showWrongNotePanel(${q.id})' class="px-3 py-1.5 ${hasNote ? 'bg-purple-100 text-purple-700' : 'bg-gray-50 text-gray-500'} text-xs rounded-lg hover:bg-purple-100">📔 错题笔记</button>
@@ -1269,7 +1268,6 @@ async function loadWrongRecord() {
     const bank = await db.banks.get(q.bankId);
     const hasNote = !!(q.wrongNote || q.aiReply);
     const lastWrongDate = q.lastWrongAt ? new Date(q.lastWrongAt).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '未知时间';
-    const qJson = JSON.stringify(q).replace(/'/g, "\\'");
     html += `
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 fade-in">
         <div class="flex items-start gap-3">
@@ -1286,7 +1284,7 @@ async function loadWrongRecord() {
           </div>
         </div>
         <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
-          <button onclick='showWrongQuestionInModal(${qJson})' class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看</button>
+          <button onclick="showWrongQuestionInModal(${q.id})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">查看</button>
           <button onclick='openEditQuestionFromWrong(${q.id})' class="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200">✏️ 编辑</button>
           <button onclick='askAIAboutWrongQuestion(${q.id})' class="px-3 py-1.5 bg-violet-100 text-violet-700 text-xs rounded-lg hover:bg-violet-200">🤖 AI答疑</button>
           <button onclick='showWrongNotePanel(${q.id})' class="px-3 py-1.5 ${hasNote ? 'bg-purple-100 text-purple-700' : 'bg-gray-50 text-gray-500'} text-xs rounded-lg hover:bg-purple-100">📔 笔记</button>
@@ -1351,7 +1349,9 @@ function getDueText(question) {
 }
 
 // 错题列表中查看单题
-function showWrongQuestionInModal(q) {
+async function showWrongQuestionInModal(qid) {
+  const q = await db.questions.get(qid);
+  if (!q) { showToast('题目不存在', 'error'); return; }
   const modal = document.getElementById('question-modal');
   const title = document.getElementById('question-modal-title');
   const content = document.getElementById('question-modal-content');
