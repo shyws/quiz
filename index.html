@@ -326,11 +326,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">题型比例</label>
-          <div class="text-xs text-gray-500 space-y-1">
-            <div>选择题 <span id="choice-ratio-display">60%</span></div>
-            <div>判断题 <span id="judge-ratio-display">30%</span></div>
-            <div>填空题 <span id="blank-ratio-display">10%</span></div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">题型比例 <span class="text-xs text-gray-400 font-normal">（拖动滑块调整）</span></label>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-600 w-16 shrink-0">单选题</span>
+              <input type="range" id="ratio-choice" min="0" max="100" value="40" oninput="updateRatios()" class="flex-1 accent-blue-500 h-2">
+              <span class="text-xs text-gray-500 w-10 text-right" id="choice-ratio-display">40%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-600 w-16 shrink-0">多选题</span>
+              <input type="range" id="ratio-multichoice" min="0" max="100" value="20" oninput="updateRatios()" class="flex-1 accent-purple-500 h-2">
+              <span class="text-xs text-gray-500 w-10 text-right" id="multichoice-ratio-display">20%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-600 w-16 shrink-0">判断题</span>
+              <input type="range" id="ratio-judge" min="0" max="100" value="20" oninput="updateRatios()" class="flex-1 accent-green-500 h-2">
+              <span class="text-xs text-gray-500 w-10 text-right" id="judge-ratio-display">20%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-600 w-16 shrink-0">填空题</span>
+              <input type="range" id="ratio-blank" min="0" max="100" value="20" oninput="updateRatios()" class="flex-1 accent-yellow-500 h-2">
+              <span class="text-xs text-gray-500 w-10 text-right" id="blank-ratio-display">20%</span>
+            </div>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            <button onclick="setRatioPreset('balanced')" class="text-xs px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">均衡</button>
+            <button onclick="setRatioPreset('choice-heavy')" class="text-xs px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">选择为主</button>
+            <button onclick="setRatioPreset('blank-heavy')" class="text-xs px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">填空为主</button>
+            <button onclick="setRatioPreset('all-types')" class="text-xs px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">全题型</button>
           </div>
         </div>
       </div>
@@ -403,7 +426,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
         </div>
         <select id="filter-type" onchange="loadBanks()" class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400">
           <option value="">全部题型</option>
-          <option value="choice">选择题</option>
+          <option value="choice">单选题</option>
+          <option value="multichoice">多选题</option>
           <option value="judge">判断题</option>
           <option value="blank">填空题</option>
         </select>
@@ -863,7 +887,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 
 <script>
-const state={currentTab:'import',currentContent:null,currentSource:'',aiConfig:{count:10,difficulty:2,choiceRatio:.6,judgeRatio:.3,blankRatio:.1},isGenerating:false,currentBankId:null,currentGeneratedQuestions:[]};
+const state={currentTab:'import',currentContent:null,currentSource:'',aiConfig:{count:10,difficulty:2,choiceRatio:.4,judgeRatio:.2,blankRatio:.2,multichoiceRatio:.2},isGenerating:false,currentBankId:null,currentGeneratedQuestions:[]};
 let currentWrongBookTab = 'review'; // 'review' 或 'record'
 
 const db=new Dexie('AIQuestionBank');
@@ -1233,7 +1257,7 @@ async function loadWrongQuestions() {
       <div class="flex items-start gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-2 flex-wrap">
-            <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'multichoice' ? 'bg-purple-50 text-purple-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'multichoice' ? '多选' : q.type === 'judge' ? '判断' : '填空'}</span>
             <span class="text-xs text-gray-400">${stars}</span>
             <span class="text-xs text-red-500 font-medium">❌ ${q.wrongCount}次</span>
             ${isDue ? '<span class="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">待复习</span>' : ''}
@@ -1282,7 +1306,7 @@ async function loadWrongRecord() {
         <div class="flex items-start gap-3">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-2">
-              <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'multichoice' ? 'bg-purple-50 text-purple-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'multichoice' ? '多选' : q.type === 'judge' ? '判断' : '填空'}</span>
               <span class="text-xs text-red-500 font-medium">累计❌ ${q.totalWrongCount}次</span>
               ${q.wrongCount && q.wrongCount > 0 ? `<span class="text-xs text-orange-500 font-medium">复习中❌ ${q.wrongCount}次</span>` : '<span class="text-xs text-green-500 font-medium">✓ 已掌握</span>'}
               ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
@@ -1369,7 +1393,7 @@ async function showWrongQuestionInModal(qid) {
   toolbar.classList.add('hidden'); // 隐藏批量工具栏
   title.textContent = '题目详情';
   
-  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'multichoice' ? '多选题' : q.type === 'judge' ? '判断题' : '填空题';
   const optionsHtml = q.options ? (() => {
     try {
       const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
@@ -1380,7 +1404,7 @@ async function showWrongQuestionInModal(qid) {
   content.innerHTML = `
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <div class="flex items-center gap-2 mb-4">
-        <span class="text-xs px-2 py-1 rounded-full ${q.type === 'choice' ? 'bg-blue-100 text-blue-700' : q.type === 'judge' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${typeLabel}</span>
+        <span class="text-xs px-2 py-1 rounded-full ${q.type === 'choice' ? 'bg-blue-100 text-blue-700' : q.type === 'multichoice' ? 'bg-purple-100 text-purple-700' : q.type === 'judge' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${typeLabel}</span>
         <span class="text-xs text-gray-400">${'⭐'.repeat(q.difficulty || 2)}</span>
         <span class="text-xs text-red-500">❌ ${q.wrongCount}次</span>
         <span class="text-xs text-gray-400">${getDueText(q)}</span>
@@ -1431,7 +1455,7 @@ function showAIAnswerModal(q) {
     document.body.appendChild(modal);
   }
   
-  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'multichoice' ? '多选题' : q.type === 'judge' ? '判断题' : '填空题';
   let optsHtml = '';
   if (q.options) {
     try {
@@ -1452,7 +1476,7 @@ function showAIAnswerModal(q) {
         <!-- 题目信息 -->
         <div class="bg-gray-50 rounded-xl p-4 mb-4">
           <div class="flex items-center gap-2 mb-2">
-            <span class="text-xs px-2 py-1 rounded-full ${q.type === 'choice' ? 'bg-blue-100 text-blue-700' : q.type === 'judge' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${typeLabel}</span>
+            <span class="text-xs px-2 py-1 rounded-full ${q.type === 'choice' ? 'bg-blue-100 text-blue-700' : q.type === 'multichoice' ? 'bg-purple-100 text-purple-700' : q.type === 'judge' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${typeLabel}</span>
             <span class="text-xs text-red-500">❌ 错误 ${q.wrongCount || 0} 次</span>
           </div>
           <p class="text-sm font-medium text-gray-800 mb-2">${escapeHtml(q.stem || '')}</p>
@@ -1509,7 +1533,7 @@ async function doAskAI(qid) {
   
   const prompt = `你是一位专业的学习辅导老师，请对以下错题进行深度系统的答疑讲解。
 
-题目类型：${q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题'}
+题目类型：${q.type === 'choice' ? '单选题' : q.type === 'multichoice' ? '多选题' : q.type === 'judge' ? '判断题' : '填空题'}
 题目内容：${q.stem || ''}
 ${optsText ? `选项：\n${optsText}` : ''}
 正确答案：${q.answer || ''}
@@ -1708,7 +1732,7 @@ async function doExportNote(qid, format) {
   if (!q) return;
   document.getElementById('export-format-modal').classList.add('hidden');
   const bank = await db.banks.get(q.bankId);
-  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+  const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'multichoice' ? '多选题' : q.type === 'judge' ? '判断题' : '填空题';
   const noteContent = q.wrongNote || q.aiReply || '';
   const aiReplyContent = q.aiReply || '';
   const userNoteContent = q.wrongNote || '';
@@ -1940,7 +1964,7 @@ async function doExportAllNotes(mode, targetId) {
   for (let i = 0; i < filteredQuestions.length; i++) {
     const q = filteredQuestions[i];
     const bank = bankMap[q.bankId];
-    const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题';
+    const typeLabel = q.type === 'choice' ? '单选题' : q.type === 'multichoice' ? '多选题' : q.type === 'judge' ? '判断题' : '填空题';
     const noteContent = q.wrongNote || q.aiReply || '';
     const aiReplyContent = q.aiReply || '';
     const userNoteContent = q.wrongNote || '';
@@ -3049,6 +3073,7 @@ function showAIConfig(){
   document.getElementById('ai-error-panel').classList.add('hidden');
   document.getElementById('review-panel').classList.add('hidden');
   document.getElementById('ai-config-panel').scrollIntoView({behavior:'smooth'});
+  updateRatios();
   updateCostEstimate(c);
 }
 
@@ -3059,7 +3084,7 @@ function hideAIError(){document.getElementById('ai-error-panel').classList.add('
 // ==================== 题目预览与确认 ====================
 function showReviewPanel(bankId, questions) {
   const panel=document.getElementById('review-panel');
-  const tL={choice:'单选',judge:'判断',blank:'填空'};
+  const tL={choice:'单选',multichoice:'多选',judge:'判断',blank:'填空'};
   const dL={1:'⭐',2:'⭐⭐',3:'⭐⭐⭐'};
   
   let html=`
@@ -3178,20 +3203,20 @@ function editQuestionInline(qId){
   const q=state.currentGeneratedQuestions.find(q=>q.id===qId);
   if(!q)return;
   
-  const tL={choice:'单选',judge:'判断',blank:'填空'};
+  const tL={choice:'单选',multichoice:'多选',judge:'判断',blank:'填空'};
   let opts=[];
   try{opts=JSON.parse(q.options||'[]');}catch{}
   
   // 选择题的选项编辑HTML
   let optionsHtml='';
-  if(q.type==='choice'){
+  if(q.type==='choice'||q.type==='multichoice'){
     optionsHtml=`
     <div>
       <label class="text-xs text-gray-500 mb-1 block">选项（点击可编辑）：</label>
       <div class="space-y-2">
         ${opts.map((o,i)=>`<div class="flex items-center gap-2">
           <span class="text-xs font-bold text-gray-500 w-5">${o.label}.</span>
-          <input type="text" id="edit-opt-${qId}-${o.label}" value="${o.content}" class="flex-1 border rounded-lg px-2 py-1 text-sm">
+          <input type="text" id="edit-opt-${qId}-${o.label}" value="${escapeHtml(o.content||'')}" class="flex-1 border rounded-lg px-2 py-1 text-sm">
         </div>`).join('')}
       </div>
     </div>`;
@@ -3211,6 +3236,7 @@ function editQuestionInline(qId){
     <div class="flex gap-2">
       <select id="edit-type-${qId}" class="border rounded-lg px-2 py-1 text-xs">
         <option value="choice" ${q.type==='choice'?'selected':''}>单选</option>
+        <option value="multichoice" ${q.type==='multichoice'?'selected':''}>多选</option>
         <option value="judge" ${q.type==='judge'?'selected':''}>判断</option>
         <option value="blank" ${q.type==='blank'?'selected':''}>填空</option>
       </select>
@@ -3225,6 +3251,7 @@ function editQuestionInline(qId){
     <div id="edit-answer-section-${qId}">
       <label class="text-xs text-gray-500 mb-1 block">答案：</label>
       ${q.type==='blank'?`<div class="space-y-1" id="edit-preview-blank-answers-${qId}">${(()=>{const cnt=countBlanks(q.stem,q.answer);const parts=(q.answer||'').split('|');return Array.from({length:cnt},(_,i)=>`<div class="flex items-center gap-2"><span class="text-xs text-gray-500 whitespace-nowrap w-10">第${i+1}空</span><input type="text" data-preview-blank-idx="${i}" value="${escapeHtml(parts[i]||'')}" class="flex-1 border rounded-lg px-2 py-1 text-xs"></div>`).join('');})()}</div>`
+      :q.type==='multichoice'?`<div class="flex flex-wrap gap-3">${opts.map(o=>`<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="edit-multichoice-answer-${qId}" value="${o.label}" ${(q.answer||'').split(',').map(s=>s.trim()).includes(o.label)?'checked':''} class="accent-purple-600"> <span class="text-sm">${o.label}</span></label>`).join('')}</div>`
       :`<input type="text" id="edit-answer-${qId}" value="${q.answer}" class="w-full border rounded-lg px-3 py-1.5 text-sm">`}
     </div>
     <div>
@@ -3248,7 +3275,7 @@ async function saveInlineEdit(qId){
   const newDiff=parseInt(document.getElementById('edit-diff-'+qId).value);
   const newAnalysis=document.getElementById('edit-analysis-'+qId).value.trim();
 
-  // 收集答案（填空题从多输入框，其他从单输入框）
+  // 收集答案（填空题从多输入框，多选题从checkbox，其他从单输入框）
   let newAnswer='';
   if(q.type==='blank'){
     const container=document.getElementById('edit-preview-blank-answers-'+qId);
@@ -3258,15 +3285,18 @@ async function saveInlineEdit(qId){
     } else {
       newAnswer=(document.getElementById('edit-answer-'+qId)||{}).value?.trim()||'';
     }
+  } else if(q.type==='multichoice'){
+    const checkboxes=document.querySelectorAll(`input[name="edit-multichoice-answer-${qId}"]:checked`);
+    newAnswer=Array.from(checkboxes).map(cb=>cb.value).sort().join(',');
   } else {
     newAnswer=(document.getElementById('edit-answer-'+qId)||{}).value?.trim()||'';
   }
   
   if(!newStem||!newAnswer){showToast('题干和答案不能为空','warning');return;}
   
-  // 处理选项（选择题）
+  // 处理选项（选择题/多选题）
   let newOptions='[]';
-  if(newType==='choice'){
+  if(newType==='choice'||newType==='multichoice'){
     const labels=['A','B','C','D'];
     const opts=labels.map(l=>{
       const input=document.getElementById('edit-opt-'+qId+'-'+l);
@@ -3300,9 +3330,9 @@ async function regenerateSingle(qId, bankId){
       showToast('请先保存有效的 API Key','warning');return;
     }
     
-    const tLabels={choice:'选择题',judge:'判断题',blank:'填空题'};
+    const tLabels={choice:'选择题',multichoice:'多选题',judge:'判断题',blank:'填空题'};
     const dLabels={1:'简单',2:'中等',3:'困难'};
-    const prompt=`请重新生成一道${tLabels[q.type]}，难度为${dLabels[q.difficulty]}。
+    const prompt=`请重新生成一道${tLabels[q.type]||'练习题'}，难度为${dLabels[q.difficulty]}。
 
 原题目：${q.stem}
 原答案：${q.answer}
@@ -3314,7 +3344,7 @@ async function regenerateSingle(qId, bankId){
 3. 必须附带简洁解析
 4. 只输出纯JSON对象，不要任何其他文字：
 {"type":"${q.type}","stem":"...","options":[...],"answer":"...","analysis":"...","difficulty":${q.difficulty}}
-${q.type==='choice'?'选择题必须4个选项(A/B/C/D)':q.type==='judge'?'判断题为"正确"或"错误"':''}`;
+${q.type==='choice'?'选择题必须4个选项(A/B/C/D)，只有一个正确答案':q.type==='multichoice'?'多选题必须4个选项(A/B/C/D)，有2~4个正确答案，answer用逗号分隔如"A,C,D"':q.type==='judge'?'判断题为"正确"或"错误"':''}`;
     
     const res=await fetch('https://api.deepseek.com/chat/completions',{
       method:'POST',
@@ -3380,6 +3410,43 @@ function setAIDifficulty(diff){
     b.classList.toggle('font-medium',sel);
     if(!sel){b.classList.remove('border-2','border-blue-500','bg-blue-50','text-blue-700','font-medium');b.classList.add('border-gray-200');}
   });
+}
+
+// ========== 题型比例滑块 ==========
+function updateRatios(){
+  const types=['choice','multichoice','judge','blank'];
+  const raw={};
+  let sum=0;
+  types.forEach(t=>{
+    const el=document.getElementById('ratio-'+t);
+    raw[t]=parseInt(el?.value||0);
+    sum+=raw[t];
+  });
+  // 全部为0时兜底
+  if(sum===0){raw.choice=1;sum=1;}
+  // 归一化并更新state和显示
+  types.forEach(t=>{
+    const ratio=raw[t]/sum;
+    state.aiConfig[t+'Ratio']=ratio;
+    const dispEl=document.getElementById(t+'-ratio-display');
+    if(dispEl)dispEl.textContent=Math.round(ratio*100)+'%';
+  });
+}
+
+function setRatioPreset(preset){
+  const presets={
+    'balanced':{choice:25,multichoice:25,judge:25,blank:25},
+    'choice-heavy':{choice:50,multichoice:30,judge:10,blank:10},
+    'blank-heavy':{choice:10,multichoice:10,judge:20,blank:60},
+    'all-types':{choice:30,multichoice:30,judge:20,blank:20}
+  };
+  const p=presets[preset];
+  if(!p)return;
+  ['choice','multichoice','judge','blank'].forEach(t=>{
+    const el=document.getElementById('ratio-'+t);
+    if(el)el.value=p[t];
+  });
+  updateRatios();
 }
 
 // ========== 费用预估 & 分段出题 ==========
@@ -3495,9 +3562,9 @@ function updateCostEstimate(content){
 }
 
 async function generateQuestionsForChunk(chunk, count, apiKey){
-  const {difficulty,choiceRatio,judgeRatio,blankRatio}=state.aiConfig;
+  const {difficulty,choiceRatio,multichoiceRatio,judgeRatio,blankRatio}=state.aiConfig;
   const dLabels={1:'简单',2:'中等',3:'困难'};
-  const userPrompt=`根据以下内容生成${count}道练习题。\n\n内容：\n${chunk}\n\n要求：\n1. 题型比例为：选择题${Math.round(choiceRatio*100)}%，判断题${Math.round(judgeRatio*100)}%，填空题${Math.round(blankRatio*100)}%\n2. 难度级别：${dLabels[difficulty]}\n3. 选择题必须包含4个选项，且只有一个正确答案\n4. 判断题答案为"正确"或"错误"\n5. 每道题必须附带简洁的答案解析\n6. 输出格式为JSON数组，每项：{"type":"choice/judge/blank","stem":"题干","options":[{"label":"A","content":"..."}],"answer":"...","analysis":"...","difficulty":1-3}\n填空题和判断题不需要options字段。\n填空题特殊要求：\n- 题干中的空位用"____"标记，例如："Linux中根目录的符号是____，用户主目录的符号是____"\n- 多空填空题的answer用"|"分隔各空答案，例如："answer": "/|~"\n- 单空填空题的answer直接写答案，例如："answer": "/bin/bash"\n重要：只输出纯JSON数组，不要任何其他文字，不要markdown代码块。`;
+  const userPrompt=`根据以下内容生成${count}道练习题。\n\n内容：\n${chunk}\n\n要求：\n1. 题型比例为：单选题${Math.round(choiceRatio*100)}%，多选题${Math.round(multichoiceRatio*100)}%，判断题${Math.round(judgeRatio*100)}%，填空题${Math.round(blankRatio*100)}%\n2. 难度级别：${dLabels[difficulty]}\n3. 单选题(type为"choice")必须包含4个选项，且只有一个正确答案\n4. 多选题(type为"multichoice")必须包含4个选项，有2~4个正确答案，answer字段用逗号分隔多个正确选项的字母，如"A,C,D"\n5. 判断题答案为"正确"或"错误"\n6. 每道题必须附带简洁的答案解析\n7. 输出格式为JSON数组，每项：{"type":"choice/multichoice/judge/blank","stem":"题干","options":[{"label":"A","content":"..."}],"answer":"...","analysis":"...","difficulty":1-3}\n多选题和单选题都需要options字段，判断题和填空题不需要options字段。\n填空题特殊要求：\n- 题干中的空位用"____"标记，例如："Linux中根目录的符号是____，用户主目录的符号是____"\n- 多空填空题的answer用"|"分隔各空答案，例如："answer": "/|~"\n- 单空填空题的answer直接写答案，例如："answer": "/bin/bash"\n重要：只输出纯JSON数组，不要任何其他文字，不要markdown代码块。`;
 
   let debugLog = '=== 调试日志 ===\n';
   debugLog += '内容长度: ' + chunk.length + ' 字\n';
@@ -3774,7 +3841,7 @@ async function startAIGenerate(){
 
     if(allQuestions.length===0)throw new Error('所有分段均未生成题目，请重试');
 
-    const bankId=await db.banks.add({name:state.currentSource.substring(0,30),description:'',source:state.currentSource,sourceContent:state.currentContent,tags:[],stats:{total:0,choice:0,judge:0,blank:0,short:0},createdAt:Date.now(),updatedAt:Date.now()});
+    const bankId=await db.banks.add({name:state.currentSource.substring(0,30),description:'',source:state.currentSource,sourceContent:state.currentContent,tags:[],stats:{total:0,choice:0,multichoice:0,judge:0,blank:0,short:0},createdAt:Date.now(),updatedAt:Date.now()});
     const qRecs=allQuestions.map((q,i)=>({bankId,type:q.type||'choice',difficulty:q.difficulty||state.aiConfig.difficulty,stem:q.stem||'',options:JSON.stringify(q.options||[]),answer:q.answer||'',analysis:q.analysis||'',isConfirmed:true,order:i,createdAt:Date.now(),updatedAt:Date.now()}));
     await db.questions.bulkAdd(qRecs);
     await refreshBankStats(bankId);
@@ -3870,6 +3937,7 @@ async function loadBanks(){
         <div class="bg-gray-50 flex items-center gap-4 text-xs text-gray-500">
           <span>📊 共 ${qs.length} 题</span>
           ${bank.stats?.choice?`<span>单选 ${bank.stats.choice}</span>`:''}
+          ${bank.stats?.multichoice?`<span>多选 ${bank.stats.multichoice}</span>`:''}
           ${bank.stats?.judge?`<span>判断 ${bank.stats.judge}</span>`:''}
           ${bank.stats?.blank?`<span>填空 ${bank.stats.blank}</span>`:''}
         </div>
@@ -3885,16 +3953,17 @@ async function loadBanks(){
 }
 
 function renderQuestionItem(q, showCheckbox = true, keyword = ''){
-  const tL={choice:'单选',judge:'判断',blank:'填空',short:'简答'};
-  const tC={choice:'bg-blue-50 text-blue-600',judge:'bg-green-50 text-green-600',blank:'bg-yellow-50 text-yellow-600',short:'bg-purple-50 text-purple-600'};
+  const tL={choice:'单选',multichoice:'多选',judge:'判断',blank:'填空',short:'简答'};
+  const tC={choice:'bg-blue-50 text-blue-600',multichoice:'bg-purple-50 text-purple-600',judge:'bg-green-50 text-green-600',blank:'bg-yellow-50 text-yellow-600',short:'bg-indigo-50 text-indigo-600'};
   const stars='★'.repeat(q.difficulty||1)+'☆'.repeat(3-(q.difficulty||1));
   let optsHtml='';
-  if(q.type==='choice'){
+  if(q.type==='choice'||q.type==='multichoice'){
     try{
       const optsStr = typeof q.options === 'string' ? q.options : JSON.stringify(q.options||[]);
       const opts=JSON.parse(optsStr||'[]');
       if(Array.isArray(opts) && opts.length > 0){
-        optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>`<div class="text-sm text-gray-600 ${o.label===q.answer?'font-semibold text-green-600':''}">${highlightText(o.label||'', keyword)}. ${highlightText(o.content||'', keyword)}</div>`).join('')}</div>`;
+        const correctSet = q.type==='multichoice' ? new Set((q.answer||'').split(',').map(s=>s.trim())) : null;
+        optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>{const isCorrect = q.type==='multichoice' ? correctSet.has(o.label) : o.label===q.answer; return `<div class="text-sm text-gray-600 ${isCorrect?'font-semibold text-green-600':''}">${highlightText(o.label||'', keyword)}. ${highlightText(o.content||'', keyword)}</div>`;}).join('')}</div>`;
       }
     }catch(e){console.warn('解析选项失败:', q.id, e);}
   }
@@ -4052,7 +4121,7 @@ async function deleteBank(id){
 
 async function refreshBankStats(bankId){
   const qs=await db.questions.where('bankId').equals(bankId).toArray();
-  const stats={total:qs.length,choice:qs.filter(q=>q.type==='choice').length,judge:qs.filter(q=>q.type==='judge').length,blank:qs.filter(q=>q.type==='blank').length,short:qs.filter(q=>q.type==='short').length};
+  const stats={total:qs.length,choice:qs.filter(q=>q.type==='choice').length,multichoice:qs.filter(q=>q.type==='multichoice').length,judge:qs.filter(q=>q.type==='judge').length,blank:qs.filter(q=>q.type==='blank').length,short:qs.filter(q=>q.type==='short').length};
   await db.banks.update(bankId,{stats,updatedAt:Date.now()});
 }
 
@@ -4924,21 +4993,24 @@ function escapeHtml(str) {
 async function openEditQuestion(qid){
   const q=await db.questions.get(qid);
   if(!q){showToast('题目不存在','error');return;}
-  const tL={choice:'单选',judge:'判断',blank:'填空',short:'简答'};
-  const tC={choice:'bg-blue-50 text-blue-600',judge:'bg-green-50 text-green-600',blank:'bg-yellow-50 text-yellow-600',short:'bg-purple-50 text-purple-600'};
+  const tL={choice:'单选',multichoice:'多选',judge:'判断',blank:'填空',short:'简答'};
+  const tC={choice:'bg-blue-50 text-blue-600',multichoice:'bg-purple-50 text-purple-600',judge:'bg-green-50 text-green-600',blank:'bg-yellow-50 text-yellow-600',short:'bg-indigo-50 text-indigo-600'};
   let optsJson=[];
   try{optsJson=JSON.parse(q.options||'[]');}catch{}
   
   let optionsHtml='';
-  if(q.type==='choice'){
+  if(q.type==='choice'||q.type==='multichoice'){
+    const answerSet=q.type==='multichoice'?new Set((q.answer||'').split(',').map(s=>s.trim())):null;
     optionsHtml=`<div class="mt-3">
       <label class="text-xs font-medium text-gray-500">选项（点击可编辑）：</label>
       <div class="space-y-2 mt-1">
         ${optsJson.map((o,i)=>`<div class="flex items-center gap-2">
           <span class="text-xs font-bold text-gray-500 w-5">${escapeHtml(o.label)}.</span>
           <input type="text" data-opt="${escapeHtml(o.label)}" value="${escapeHtml(o.content)}" class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+          ${q.type==='multichoice'?`<label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer whitespace-nowrap"><input type="checkbox" data-correct-opt="${escapeHtml(o.label)}" ${answerSet.has(o.label)?'checked':''} class="accent-purple-600"> 正确</label>`:''}
         </div>`).join('')}
       </div>
+      ${q.type==='multichoice'?'<p class="text-xs text-gray-400 mt-1">💡 勾选"正确"标记多选题的正确选项</p>':''}
     </div>`;
   } else if(q.type==='judge'){
     optionsHtml=`<div class="mt-3"><label class="text-xs font-medium text-gray-500">正确答案：</label><div class="flex gap-3 mt-1">
@@ -5084,6 +5156,12 @@ async function saveEditQuestion(qid){
     const correct=opts.find(o=>o.content===q.answer);
     answer=correct?correct.label:q.answer;
     options=JSON.stringify(opts);
+  } else if(q.type==='multichoice'){
+    const optInputs=document.querySelectorAll('#edit-question-'+qid+' [data-opt]');
+    const opts=Array.from(optInputs).map(i=>({label:i.dataset.opt,content:i.value.trim()}));
+    const correctChecks=document.querySelectorAll('#edit-question-'+qid+' [data-correct-opt]:checked');
+    answer=Array.from(correctChecks).map(cb=>cb.dataset.correctOpt).sort().join(',');
+    options=JSON.stringify(opts);
   }
   
   await db.questions.update(qid,{stem,answer,analysis,difficulty,options,updatedAt:Date.now()});
@@ -5108,10 +5186,10 @@ async function regenerateQuestion(qid){
   btn.disabled=true;btn.textContent='⏳ 重生成中...';
   try{
     // 构造当前题目的完整内容，传给 AI 用于纠错或生成变题
-    let currentQInfo=`题型：${q.type==='choice'?'选择题':q.type==='judge'?'判断题':'填空题'}
+    let currentQInfo=`题型：${q.type==='choice'?'选择题':q.type==='multichoice'?'多选题':q.type==='judge'?'判断题':'填空题'}
 难度：${q.difficulty===1?'简单':q.difficulty===3?'困难':'中等'}
 题干：${q.stem}
-${q.type==='choice'?('选项：\n'+JSON.parse(q.options||'[]').map(o=>`${o.label}. ${o.content}`).join('\n')):''}${q.type==='blank'?('填空答案示例：'+q.answer):''}
+${(q.type==='choice'||q.type==='multichoice')?('选项：\n'+JSON.parse(q.options||'[]').map(o=>`${o.label}. ${o.content}`).join('\n')):''}${q.type==='blank'?('填空答案示例：'+q.answer):''}
 正确答案：${q.answer}
 解析：${q.analysis||'（无解析）'}`;
 
@@ -5127,9 +5205,9 @@ ${currentQInfo}
 
 【输出要求】
 - 难度必须与输入题目保持一致（${q.difficulty===1?'简单':q.difficulty===3?'困难':'中等'}）
-- ${q.type==='choice'?'必须有4个选项，只有一个正确答案':'答案唯一'}${q.type==='blank'?'\n- 题干中的空位用"____"标记，多空答案用"|"分隔':''}
+- ${q.type==='choice'?'必须有4个选项，只有一个正确答案':q.type==='multichoice'?'必须有4个选项，有2~4个正确答案，answer用逗号分隔如"A,C,D"':'答案唯一'}${q.type==='blank'?'\n- 题干中的空位用"____"标记，多空答案用"|"分隔':''}
 - 仅输出符合以下格式的 JSON，不要有任何其他文字：
-${q.type==='choice'?'{"type":"choice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"正确答案选项字母","analysis":"解析","difficulty":'+q.difficulty+'}':q.type==='judge'?'{"type":"judge","stem":"题干","answer":"正确或错误","analysis":"解析","difficulty":'+q.difficulty+'}':'{"type":"blank","stem":"题干，答案处用____表示","answer":"填空答案（多空用|分隔）","analysis":"解析","difficulty":'+q.difficulty+'}'}`;
+${q.type==='choice'?'{"type":"choice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"正确答案选项字母","analysis":"解析","difficulty":'+q.difficulty+'}':q.type==='multichoice'?'{"type":"multichoice","stem":"题干","options":[{"label":"A","content":"选项A"},{"label":"B","content":"选项B"},{"label":"C","content":"选项C"},{"label":"D","content":"选项D"}],"answer":"A,C,D","analysis":"解析","difficulty":'+q.difficulty+'}':q.type==='judge'?'{"type":"judge","stem":"题干","answer":"正确或错误","analysis":"解析","difficulty":'+q.difficulty+'}':'{"type":"blank","stem":"题干，答案处用____表示","answer":"填空答案（多空用|分隔）","analysis":"解析","difficulty":'+q.difficulty+'}'}`;
     
     const apiKey=localStorage.getItem('deepseek_api_key');
     if(!apiKey||apiKey.startsWith('sk-••')){showToast('请先配置 DeepSeek API Key','warning');return;}
@@ -5217,6 +5295,7 @@ function toggleQuizOrder(){
   }
   quizState.currentIndex=0;
   quizState.answers={};
+  quizState.multiChoices={};
   updateQuizUI();
 }
 
@@ -5272,6 +5351,40 @@ function updateQuizUI(){
         <span class="font-bold mr-2">${o.label}.</span>${escapeHtml(o.content||'')}
       </div>`;
     }).join('')}</div>`;
+  } else if(q.type==='multichoice'){
+    let opts=[];
+    try{opts=JSON.parse(q.options||'[]');}catch{}
+    const userAnswer=answers[q.id];
+    const hasAnswered=userAnswer!==undefined;
+    // 临时选中状态（未提交前）
+    if(!quizState.multiChoices)quizState.multiChoices={};
+    if(!quizState.multiChoices[q.id])quizState.multiChoices[q.id]=[];
+    const tempSel=quizState.multiChoices[q.id];
+    // 正确答案集合
+    const correctSet=new Set((q.answer||'').split(',').map(s=>s.trim()));
+    const userSet=hasAnswered?new Set((userAnswer||'').split(',').map(s=>s.trim())):new Set(tempSel);
+    optionsHtml=`<div class="mt-3 mb-2 p-2 bg-purple-50 rounded-lg text-xs text-purple-600 flex items-center gap-1"><span class="font-medium">📝 多选题</span><span>· 可选择多个选项，选完点击"确认答案"</span></div><div class="space-y-2 mt-2">${opts.map(o=>{
+      const isSelected=userSet.has(o.label);
+      const isCorrect=correctSet.has(o.label);
+      let cls='border-gray-200 text-gray-700';
+      let icon='';
+      if(hasAnswered){
+        if(isCorrect){cls='border-green-400 bg-green-50 text-green-800';icon='<span class="ml-auto text-green-600 font-bold">✓</span>';}
+        else if(isSelected&&!isCorrect){cls='border-red-400 bg-red-50 text-red-800';icon='<span class="ml-auto text-red-500 font-bold">✗</span>';}
+        else cls='border-gray-100 text-gray-400';
+      } else {
+        if(isSelected){cls='border-purple-400 bg-purple-50 text-purple-800 ring-2 ring-purple-400';icon='<span class="ml-auto text-purple-600 font-bold">✓</span>';}
+      }
+      return`<div onclick="${hasAnswered?'':`toggleMultiChoice('${o.label}')`}" class="quiz-option ${hasAnswered?'cursor-default':'cursor-pointer'} p-3 rounded-xl border-2 ${cls} transition-all ${hasAnswered?'':'hover:border-purple-400'} flex items-center">
+        <span class="font-bold mr-2">${o.label}.</span><span class="flex-1">${escapeHtml(o.content||'')}</span>${icon}
+      </div>`;
+    }).join('')}</div>`;
+    // 确认/重做按钮
+    if(!hasAnswered){
+      optionsHtml+=`<div class="mt-3 flex gap-2"><button onclick="confirmMultiChoice()" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-xl hover:bg-purple-700 transition-colors">✓ 确认答案（已选 ${tempSel.length} 个）</button></div>`;
+    } else {
+      optionsHtml+=`<div class="mt-3"><button onclick="clearMultiChoiceAnswer()" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-xl hover:bg-gray-50 transition-colors">✏ 重新作答</button></div>`;
+    }
   } else if(q.type==='judge'){
     const userAnswer=answers[q.id];
     const opts=[['正确','✅'],['错误','❌']];
@@ -5363,7 +5476,7 @@ function updateQuizUI(){
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-5 py-3 flex items-center justify-between text-white">
           <div class="flex items-center gap-2">
-            <span class="text-xs bg-white/20 px-2 py-1 rounded">${q.type==='choice'?'单选题':q.type==='judge'?'判断题':q.type==='blank'?'填空题':'简答题'}</span>
+            <span class="text-xs bg-white/20 px-2 py-1 rounded">${q.type==='choice'?'单选题':q.type==='multichoice'?'多选题':q.type==='judge'?'判断题':q.type==='blank'?'填空题':'简答题'}</span>
             <span class="text-xs bg-white/20 px-2 py-1 rounded">${'⭐'.repeat(q.difficulty||2)}</span>
           </div>
           ${answers[q.id]!==undefined?'<span class="text-xs text-green-200">✓ 已作答</span>':'<span class="text-xs text-white/70">未作答</span>'}
@@ -5468,6 +5581,11 @@ function selectAnswer(answer){
     const correctParts=q.answer.split('|');
     const answerParts=answer.split('|');
     isCorrect=correctParts.length===answerParts.length&&correctParts.every((c,i)=>c.trim()===(answerParts[i]||'').trim());
+  } else if(q.type==='multichoice'){
+    // 多选题：排序后比较
+    const correctArr=(q.answer||'').split(',').map(s=>s.trim()).sort();
+    const answerArr=(answer||'').split(',').map(s=>s.trim()).sort();
+    isCorrect=correctArr.length===answerArr.length&&correctArr.every((c,i)=>c===answerArr[i]);
   } else {
     isCorrect=answer===q.answer;
   }
@@ -5494,6 +5612,37 @@ function selectAnswer(answer){
       // 答错了，停留在当前题，用户可点击"下一题"
     }
   }
+}
+
+// ========== 多选题交互 ==========
+function toggleMultiChoice(label){
+  const q=quizState.questions[quizState.currentIndex];
+  if(!q||q.type!=='multichoice')return;
+  if(!quizState.multiChoices)quizState.multiChoices={};
+  if(!quizState.multiChoices[q.id])quizState.multiChoices[q.id]=[];
+  const sel=quizState.multiChoices[q.id];
+  const idx=sel.indexOf(label);
+  if(idx>=0)sel.splice(idx,1);
+  else sel.push(label);
+  updateQuizUI();
+}
+
+function confirmMultiChoice(){
+  const q=quizState.questions[quizState.currentIndex];
+  if(!q||q.type!=='multichoice')return;
+  const sel=quizState.multiChoices[q.id]||[];
+  if(sel.length===0){showToast('请至少选择一个选项','warning');return;}
+  // 排序后用逗号拼接
+  const answer=sel.sort().join(',');
+  selectAnswer(answer);
+}
+
+function clearMultiChoiceAnswer(){
+  const q=quizState.questions[quizState.currentIndex];
+  if(!q||q.type!=='multichoice')return;
+  if(quizState.multiChoices)delete quizState.multiChoices[q.id];
+  delete quizState.answers[q.id];
+  updateQuizUI();
 }
 
 function recordAnswer(qid,isCorrect){
@@ -5733,7 +5882,7 @@ async function exportAllWrongNotes() {
       hasNotes = true;
       content += `## ${escapeHtml(q.stem || '无题干')}\n\n`;
       content += `**题库**：${escapeHtml(bank?.name || '未知')}\n\n`;
-      content += `**类型**：${q.type === 'choice' ? '单选题' : q.type === 'judge' ? '判断题' : '填空题'}\n\n`;
+      content += `**类型**：${q.type === 'choice' ? '单选题' : q.type === 'multichoice' ? '多选题' : q.type === 'judge' ? '判断题' : '填空题'}\n\n`;
       
       if (q.type === 'choice' && q.options) {
         try {
@@ -5836,7 +5985,7 @@ async function loadWrongBookReview() {
           <div class="flex items-start gap-3">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap mb-2">
-                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'multichoice' ? 'bg-purple-50 text-purple-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'multichoice' ? '多选' : q.type === 'judge' ? '判断' : '填空'}</span>
                 ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
                 <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
               </div>
@@ -5905,7 +6054,7 @@ async function loadWrongBookRecord() {
           <div class="flex items-start gap-3">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap mb-2">
-                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'multichoice' ? 'bg-purple-50 text-purple-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'multichoice' ? '多选' : q.type === 'judge' ? '判断' : '填空'}</span>
                 ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
                 ${isRemoved ? '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">已掌握</span>' : ''}
                 <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
@@ -5965,7 +6114,7 @@ async function loadWrongBookReviewPage() {
           <div class="flex items-start gap-3">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap mb-2">
-                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'multichoice' ? 'bg-purple-50 text-purple-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'multichoice' ? '多选' : q.type === 'judge' ? '判断' : '填空'}</span>
                 ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
                 <span class="text-xs text-gray-400">${escapeHtml(bank?.name || '未知')}</span>
                 <span class="text-xs text-gray-400">加入时间：${addedDate}</span>
@@ -6030,7 +6179,7 @@ async function loadWrongBookRecordPage() {
           <div class="flex items-start gap-3">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap mb-2">
-                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'judge' ? '判断' : '填空'}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full ${q.type === 'choice' ? 'bg-blue-50 text-blue-600' : q.type === 'multichoice' ? 'bg-purple-50 text-purple-600' : q.type === 'judge' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}">${q.type === 'choice' ? '单选' : q.type === 'multichoice' ? '多选' : q.type === 'judge' ? '判断' : '填空'}</span>
                 ${hasNote ? '<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">📔 有笔记</span>' : ''}
                 ${isRemoved ? '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">已掌握</span>' : ''}
                 <span class="text-xs text-gray-400">${escapeHtml(bank?.name || '未知')}</span>
@@ -6209,7 +6358,15 @@ function showQuizResult(){
   let correct=0,wrong=0;
   for(const q of questions){
     const ua=answers[q.id];
-    if(ua===q.answer)correct++;
+    let isCorrect;
+    if(q.type==='multichoice'){
+      const ca=(q.answer||'').split(',').map(s=>s.trim()).sort();
+      const aa=(ua||'').split(',').map(s=>s.trim()).sort();
+      isCorrect=ca.length===aa.length&&ca.every((c,i)=>c===aa[i]);
+    } else {
+      isCorrect=ua===q.answer;
+    }
+    if(isCorrect)correct++;
     else if(ua!==undefined)wrong++;
   }
   const total=questions.length;
@@ -6258,15 +6415,28 @@ function reviewQuizAnswers(filterWrongOnly){
 
   const renderCard=(q,i,originalIndex)=>{
     const ua=answers[q.id];
-    const isCorrect=ua===q.answer;
+    let isCorrect;
+    if(q.type==='multichoice'){
+      const ca=(q.answer||'').split(',').map(s=>s.trim()).sort();
+      const aa=(ua||'').split(',').map(s=>s.trim()).sort();
+      isCorrect=ca.length===aa.length&&ca.every((c,i)=>c===aa[i]);
+    } else {
+      isCorrect=ua===q.answer;
+    }
     let optsHtml='';
     if(q.type==='choice'){
       let opts=[];
       try{opts=JSON.parse(q.options||'[]');}catch{}
-      optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>`<div class="text-sm ${o.label===q.answer?'text-green-600 font-bold':o.label===ua?'text-red-600 font-bold':'text-gray-500'}">${escapeHtml(o.label)}. ${escapeHtml(o.content||'')} ${o.label===q.answer?'✅':o.label===ua&&!isCorrect?'❌':''}</div>`).join('')}</div>`;
+      optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>`<div class="text-sm ${o.label===q.answer?'text-green-600 font-bold':o.label===ua?'text-red-600 font-bold':'text-gray-500'}">${escapeHtml(o.label)}. ${escapeHtml(o.content||'')} ${o.label===q.answer?'\u2705':o.label===ua&&!isCorrect?'\u274c':''}</div>`).join('')}</div>`;
+    } else if(q.type==='multichoice'){
+      let opts=[];
+      try{opts=JSON.parse(q.options||'[]');}catch{}
+      const correctSet=new Set((q.answer||'').split(',').map(s=>s.trim()));
+      const userSet=new Set((ua||'').split(',').map(s=>s.trim()));
+      optsHtml=`<div class="mt-2 space-y-1">${opts.map(o=>{const isC=correctSet.has(o.label);const isU=userSet.has(o.label);let cls='text-gray-500';let icon='';if(isC){cls='text-green-600 font-bold';icon='\u2705';}else if(isU&&!isC){cls='text-red-600 font-bold';icon='\u274c';}return`<div class="text-sm ${cls}">${escapeHtml(o.label)}. ${escapeHtml(o.content||'')} ${icon}</div>`;}).join('')}</div>`;
     } else {
-      const uaDisplay=ua!==undefined?`你的答案：${escapeHtml(ua)}${isCorrect?' ✅':' ❌'}`:'未作答';
-      optsHtml=`<div class="mt-2 text-sm ${isCorrect?'text-green-600':ua!==undefined?'text-red-600':''}">正确答案：${escapeHtml(q.answer||'')} <span class="ml-2 text-xs">（${uaDisplay}）</span></div>`;
+      const uaDisplay=ua!==undefined?`\u4f60\u7684\u7b54\u6848\uff1a${escapeHtml(ua)}${isCorrect?' \u2705':' \u274c'}`:'\u672a\u4f5c\u7b54';
+      optsHtml=`<div class="mt-2 text-sm ${isCorrect?'text-green-600':ua!==undefined?'text-red-600':''}">\u6b63\u786e\u7b54\u6848\uff1a${escapeHtml(q.answer||'')} <span class="ml-2 text-xs">\uff08${uaDisplay}\uff09</span></div>`;
     }
     return`<div class="bg-white rounded-xl border ${isCorrect?'border-green-200':ua!==undefined?'border-red-200':'border-gray-200'} p-4">
       <div class="flex items-center gap-2 mb-2">
@@ -6282,7 +6452,7 @@ function reviewQuizAnswers(filterWrongOnly){
   // 构建题目的原始序号map
   const originalIndexMap=new Map(questions.map((q,i)=>[q.id,i]));
 
-  const wrongCount=questions.filter(q=>{ const ua=answers[q.id]; return ua!==undefined&&ua!==q.answer; }).length;
+  const wrongCount=questions.filter(q=>{ const ua=answers[q.id]; if(ua===undefined)return false; if(q.type==='multichoice'){const ca=(q.answer||'').split(',').map(s=>s.trim()).sort();const aa=(ua||'').split(',').map(s=>s.trim()).sort();return !(ca.length===aa.length&&ca.every((c,i)=>c===aa[i]));} return ua!==q.answer; }).length;
 
   document.getElementById('quiz-content').innerHTML=`
     <div class="max-w-2xl mx-auto space-y-4">
